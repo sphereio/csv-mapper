@@ -1,0 +1,14 @@
+.DS_Store
+node_modules
+npm-debug.log
+build
+lib
+test
+.coveralls.yml
+coverage
+config.js
+
+# idea stuff
+.idea
+*.iml
+*.ipr

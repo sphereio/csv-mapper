@@ -1,0 +1,23 @@
+language: node_js
+node_js:
+  - '0.10'
+before_script:
+- npm install -g grunt-cli
+- ./create_config.sh
+script:
+- npm test
+- node lib/run.js --projectKey ${SPHERE_PROJECT_KEY} --clientId ${SPHERE_CLIENT_ID}
+  --clientSecret ${SPHERE_CLIENT_SECRET}
+notifications:
+  hipchat:
+    rooms:
+      secure:
+    template:
+    - ! '%{repository}#%{build_number} (%{author}): %{message} (<a href="%{build_url}">Details</a>/<a
+      href="%{compare_url}">Compare</a>)'
+    format: html
+    on_success: change
+    on_failure: change
+SPHERE_PROJECT_KEY:
+SPHERE_CLIENT_ID:
+SPHERE_CLIENT_SECRET:
