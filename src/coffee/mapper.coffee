@@ -17,32 +17,32 @@ util = require '../lib/util'
 ###
 class Mapper
 
-  defaultOptions = {}
-
   constructor: (options = {}) ->
-    @options = _.extend({}, defaultOptions, options)
+    @options = options
+
+  processCsv: (csvIn, csvOut, transformers = [], listeners = []) ->
+    d = Q.defer()
+
+    c = csv().from.stream(csvIn).to.stream(csvOut)
+
+    csvWithTrans = _.foldl(transformers, ((c, trans) -> c.transform trans), c)
+    csvWithListenars = _.foldl(listeners, ((c, listen) -> c.on 'record', listen), csvWithTrans)
+
+    csvWithListenars.on('end', (count) -> d.resolve(count)).on('error', (error) -> d.reject(error))
+
+    d.promise
 
   run: ->
-#    util.loadFile("http://stackoverflow.com/questions/646628/javascript-startswith")
-
-    csv()
-    .from.stream(fs.createReadStream("/Users/oilyenko/dev/prj-ct/sphere-product-mapper/test-data/product-data.csv"))
-    .to.path("/Users/oilyenko/dev/prj-ct/sphere-product-mapper/test-data/product-data-out.csv")
-    .transform (row) ->
-      row.unshift row.pop()
+    rowMutator = (row) ->
+      row[0] = "Foo"
       row
-    .on 'record', (row, index) ->
-      console.log('#'+index+' '+ JSON.stringify(row))
-    .on 'end', (count) ->
-      console.log('Number of lines: '+count)
-    .on 'error', (error) ->
-      console.log(error.message)
 
-    util.loadFile("/Users/oilyenko/dev/prj-ct/sphere-product-mapper/main.js")
-    .then (contents) ->
-      console.info "#{contents}"
-    .fail (error) ->
-      console.err error
+    logger = (row) ->
+#      console.info "Line: #{row}"
 
+    Q.spread [util.fileStreamOrStdin(@options.inCsv), util.fileStreamOrStdout(@options.outCsv)], (csvIn, csvOut) =>
+      @processCsv(csvIn, csvOut, [rowMutator], [logger])
+      .finally () =>
+        if util.nonEmpty @options.outCsv then util.closeStream(csvOut) else Q()
 
 module.exports = Mapper
