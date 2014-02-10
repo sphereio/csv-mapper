@@ -6,9 +6,9 @@ argv = require('optimist')
   .describe('projectKey', 'Sphere.io project key.')
   .describe('clientId', 'Sphere.io HTTP API client id.')
   .describe('clientSecret', 'Sphere.io HTTP API client secret.')
-  .demand(['projectKey', 'clientId', 'clientSecret'])
+#  .demand(['projectKey', 'clientId', 'clientSecret'])
   .argv
-Connector = require('../main').Connector
+Mapper= require('../main').Mapper
 
 options =
   config:
@@ -16,6 +16,10 @@ options =
     client_id: argv.clientId
     client_secret: argv.clientSecret
 
-connector = new Connector options
-connector.run (success) ->
-  process.exit 1 unless success
+mapper = new Mapper options
+mapper.run().then( () ->
+  process.exit 0
+).fail((error) ->
+  console.err error
+  process.exit 1
+)
