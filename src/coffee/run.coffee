@@ -16,10 +16,9 @@ options =
     client_id: argv.clientId
     client_secret: argv.clientSecret
 
-mapper = new Mapper options
-mapper.run().then( () ->
+(new Mapper options).run()
+.then () ->
   process.exit 0
-).fail((error) ->
+.fail (error) ->
   console.err error
   process.exit 1
-)

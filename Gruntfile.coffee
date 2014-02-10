@@ -8,11 +8,11 @@ module.exports = (grunt)->
 
     meta:
       banner: '/* ===========================================================\n' +
-              '# <%= pkg.title || pkg.name %> - v<%= pkg.version %>\n' +
-              '# ==============================================================\n' +
-              '# Copyright (c) <%= grunt.template.today(\"yyyy\") %> <%= pkg.author.name %>\n' +
-              '# Licensed <%= _.pluck(pkg.licenses, \"type\").join(\", \") %>.\n' +
-              '*/\n'
+        '# <%= pkg.title || pkg.name %> - v<%= pkg.version %>\n' +
+        '# ==============================================================\n' +
+        '# Copyright (c) <%= grunt.template.today(\"yyyy\") %> <%= pkg.author.name %>\n' +
+        '# Licensed <%= _.pluck(pkg.licenses, \"type\").join(\", \") %>.\n' +
+        '*/\n'
 
     coffeelint:
       options:
