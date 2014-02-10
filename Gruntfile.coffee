@@ -18,7 +18,7 @@ module.exports = (grunt)->
       options:
         indentation:
           value: 2
-          level: 'ignore'
+          level: 'error'
         no_trailing_semicolons:
           level: 'error'
         no_trailing_whitespace:
