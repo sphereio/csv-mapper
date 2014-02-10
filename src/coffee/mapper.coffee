@@ -26,23 +26,23 @@ class Mapper
 #    util.loadFile("http://stackoverflow.com/questions/646628/javascript-startswith")
 
     csv()
-      .from.stream(fs.createReadStream("/Users/oilyenko/dev/prj-ct/sphere-product-mapper/test-data/product-data.csv"))
-      .to.path("/Users/oilyenko/dev/prj-ct/sphere-product-mapper/test-data/product-data-out.csv")
-      .transform (row) ->
-        row.unshift row.pop()
-        row
-      .on 'record', (row, index) ->
-        console.log('#'+index+' '+ JSON.stringify(row))
-      .on 'end', (count) ->
-        console.log('Number of lines: '+count)
-      .on 'error', (error) ->
-        console.log(error.message)
+    .from.stream(fs.createReadStream("/Users/oilyenko/dev/prj-ct/sphere-product-mapper/test-data/product-data.csv"))
+    .to.path("/Users/oilyenko/dev/prj-ct/sphere-product-mapper/test-data/product-data-out.csv")
+    .transform (row) ->
+      row.unshift row.pop()
+      row
+    .on 'record', (row, index) ->
+      console.log('#'+index+' '+ JSON.stringify(row))
+    .on 'end', (count) ->
+      console.log('Number of lines: '+count)
+    .on 'error', (error) ->
+      console.log(error.message)
 
     util.loadFile("/Users/oilyenko/dev/prj-ct/sphere-product-mapper/main.js")
-      .then (contents) ->
-        console.info "#{contents}"
-      .fail (error) ->
-        console.err error
+    .then (contents) ->
+      console.info "#{contents}"
+    .fail (error) ->
+      console.err error
 
 
 module.exports = Mapper
