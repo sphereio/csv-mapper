@@ -1,8 +1,8 @@
 Q = require 'q'
-fs = require "q-io/fs"
-http = require "q-io/http"
+fs = require 'q-io/fs'
+http = require 'q-io/http'
 
-stdFs = require "fs"
+stdFs = require 'fs'
 _ = require('underscore')._
 _s = require 'underscore.string'
 
@@ -15,7 +15,7 @@ module.exports =
     if _s.startsWith(fileOrUrl, 'http')
       http.read fileOrUrl
     else
-      fs.read fileOrUrl, "r"
+      fs.read fileOrUrl, 'r'
 
   fileStreamOrStdin: (filePath) ->
     fs.exists(filePath).then (exists) ->
@@ -35,10 +35,16 @@ module.exports =
 
     stream.end()
 
-    stream.on "finish", () -> d.resolve()
-    stream.on "error", (e)-> d.reject(e)
+    stream.on 'finish', () -> d.resolve()
+    stream.on 'error', (e)-> d.reject(e)
 
     d.promise
 
   nonEmpty: (str) ->
-    _s.trim(str).length > 0
+    str and _s.trim(str).length > 0
+
+  abstractMethod: () ->
+    throw new Error('Method not implemented!')
+
+  notImplementedYet: () ->
+    throw new Error('Method not implemented!')
