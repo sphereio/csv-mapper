@@ -28,11 +28,11 @@
     "test": "grunt coverage"
   },
   "dependencies": {
-    "optimist": "0.6.0",
-    "underscore": "~1.5.2",
+    "optimist": "0.6.1",
+    "underscore": "~1.6.0",
     "underscore.string": "2.3.3",
     "q": "~1.0.0",
-    "q-io": "~1.0.0",
+    "q-io": "~1.10.9",
     "csv": "0.3.7"
   },
   "devDependencies": {
