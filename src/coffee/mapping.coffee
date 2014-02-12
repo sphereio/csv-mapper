@@ -10,7 +10,9 @@ class ColumnMapping
   @create: (options) -> util.abstractMethod() # promise with mapplig
   @supports: (options) -> util.abstractMethod() # boolean - whether options are supported
 
-  constructor: (options) ->
+  constructor: (transformers, options) ->
+    @_transformers = transformers
+
     @_priority = options.priority
     @_groups = options.groups or [util.defaultGroup()]
 
@@ -23,24 +25,6 @@ class ColumnMapping
 
   supportsGroup: (group) ->
     _.contains @_groups, group
-
-  _initValueTransformers: (transformers, transformerConfig) ->
-    if transformerConfig
-      promises = _.map transformerConfig, (config) ->
-        found  = _.find transformers, (t) -> t.supports(config)
-
-        if found
-          found.create config
-        else
-          throw new Error("unsupported value transformer type: #{config.type}")
-
-      Q.all promises
-    else
-      Q([])
-
-  _transformValue: (valueTransformers, value) ->
-    safeValue = if util.nonEmpty(value) then value else ''
-    _.reduce valueTransformers, ((acc, transformer) -> transformer.transform(acc)), safeValue
 
   _getPropertyForGroup: (origRow, accRow, name) ->
     found = _.find accRow, (acc) =>
@@ -67,20 +51,19 @@ class CopyFromOriginalTransformer extends ColumnMapping
     options.type is 'copyFromOriginal'
 
   constructor: (transformers, options) ->
-    super(options)
+    super(transformers, options)
 
     @_includeCols = options.includeCols
     @_excludeCols = options.excludeCols
 
   map: (origRow, accRow) ->
-    reduceFn = (acc, name) =>
-      _.each accRow, (acc) =>
-        if @supportsGroup(acc.group) and @_include(name)
-          acc.row[name] = origRow[name]
+    _.each accRow, (acc) =>
+      if @supportsGroup(acc.group)
+        _.each _.keys(origRow), (name) =>
+          if @_include(name)
+            acc.row[name] = origRow[name]
 
-      acc
-
-    Q(_.reduce(_.keys(origRow), reduceFn, accRow))
+    Q(accRow)
 
   _include: (name) ->
     (not @_includeCols or _.contains(@_includeCols, name)) and (not @_excludeCols or not _.contains(@_excludeCols, name))
@@ -92,8 +75,7 @@ class CopyFromOriginalTransformer extends ColumnMapping
       else
         acc
 
-  priority: () ->
-    @_priority or 1000
+  _defaultPriority: () -> 1000
 
 class RemoveColumnsTransformer extends ColumnMapping
   @create: (transformers, options) ->
@@ -103,19 +85,18 @@ class RemoveColumnsTransformer extends ColumnMapping
     options.type is 'removeColumns'
 
   constructor: (transformers, options) ->
-    super(options)
+    super(transformers, options)
 
     @_cols = options.cols or []
 
   map: (origRow, accRow) ->
-    reduceFn = (acc, name) =>
-      _.each accRow, (acc) =>
-        if @supportsGroup(acc.group) and _.contains(@_cols, name)
-          delete acc[name]
+    _.each accRow, (acc) =>
+      if @supportsGroup(acc.group)
+        _.each _.keys(acc.row), (name) =>
+          if _.contains(@_cols, name)
+            delete acc.row[name]
 
-      acc
-
-    Q(_.reduce(_.keys(accRow), reduceFn, accRow))
+    Q(accRow)
 
   transformHeader: (headerAccumulator, originalHeader) ->
     _.map headerAccumulator, (acc) =>
@@ -124,27 +105,25 @@ class RemoveColumnsTransformer extends ColumnMapping
       else
         acc
 
-  priority: () ->
-    @_priority or 1500
+  _defaultPriority: () -> 1500
 
 class ColumnTransformer extends ColumnMapping
   @create: (transformers, options) ->
     (new ColumnTransformer(transformers, options))._init()
 
   @supports: (options) ->
-    options.type is 'columnTransformer'
+    options.type is 'transformColumn' or options.type is 'addColumn'
 
   constructor: (transformers, options) ->
-    super(options)
-
-    @_transformers = transformers
+    super(transformers, options)
 
     @_fromCol = options.fromCol
     @_toCol = options.toCol
+    @_type = options.type
     @_valueTransformersConfig = options.valueTransformers
 
   _init: () ->
-    @_initValueTransformers @_transformers, @_valueTransformersConfig
+    util.initValueTransformers @_transformers, @_valueTransformersConfig
     .then (vt) =>
       @_valueTransformers = vt
       this
@@ -152,79 +131,19 @@ class ColumnTransformer extends ColumnMapping
   map: (origRow, accRow) ->
     value = @_getPropertyForGroup origRow, accRow, @_fromCol
 
-    try
-      if @_containsSupportedGroup(accRow)
-        finalValue = @_transformValue(@_valueTransformers, value)
-        @_updatePropertyInGroups(accRow, @_toCol, finalValue)
-    catch error
-      throw new Error("Error during mapping from column '#{@_fromCol}' to column '#{@_toCol}' with current value '#{value}': #{error.message}")
-
-    Q(accRow)
-
-  transformHeader: (headerAccumulator, originalHeader) ->
-    _.map headerAccumulator, (acc) =>
-      if @supportsGroup(acc.group)
-        {group: acc.group, newHeaders: acc.newHeaders.concat([@_toCol])}
-      else
-        acc
-
-  priority: () ->
-    @_priority or 2000
-
-class ColumnGenerator extends ColumnMapping
-  @create: (transformers, options) ->
-    (new ColumnGenerator(transformers, options))._init()
-
-  @supports: (options) ->
-    options.type is 'columnGenerator'
-
-  constructor: (transformers, options) ->
-    super(options)
-
-    @_transformers = transformers
-
-    @_toCol = options.toCol
-    @_projectUnique = options.projectUnique
-    @_synonymAttribute = options.synonymAttribute
-    @_parts = _.clone options.parts
-
-  _init: () ->
-    promises = _.map @_parts, (part) =>
-      @_initValueTransformers @_transformers, part.valueTransformers
-      .then (vt) ->
-        part.valueTransformers = vt
-        part
-
-    Q.all promises
-    .then (parts) =>
-      this
-
-  map: (origRow, accRow) ->
     if @_containsSupportedGroup(accRow)
-      partialValues = _.map @_parts, (part, idx) =>
-        {size, pad, fromCol, valueTransformers} = part
+      mergedRow = _.reduce _.map(accRow, (acc) -> acc.row), ((acc, obj) ->_.extend(acc, obj)), {}
 
-        value = @_getPropertyForGroup origRow, accRow, fromCol
-
-        transformed = try
-          @_transformValue(valueTransformers, value)
-        catch error
-          throw new Error("Error during mapping from column '#{fromCol}' to a generated column '#{@_toCol}' (part #{idx}) with current value '#{value}': #{error.message}")
-
-        if transformed.length < size and pad
-          _s.pad(transformed, size, pad)
-        else if transformed.length is size
-          transformed
-        else
-          throw new Error("Generated column part size (#{transformed.length} - '#{transformed}') is smaller than expected size (#{size}) and no padding is defined for this column. Source column '#{fromCol}', generated column '#{@_toCol}' (part #{idx}) with current value '#{value}'.")
-
-      finalValue = partialValues.join ''
-
-      # TODO: check @_synonymAttribute and @_projectUnique in SPHERE project!
-
-      @_updatePropertyInGroups(accRow, @_toCol, finalValue)
-
-    Q(accRow)
+      util.transformValue(@_valueTransformers, value, mergedRow)
+      .then (finalValue) =>
+        @_updatePropertyInGroups(accRow, @_toCol, finalValue)
+        accRow
+      .fail (error) =>
+        fromMessage = if @_fromCol then "mapping from column '#{@_fromCol}' to" else "generation of"
+        valueMessage = if value then " with current value '#{value}'" else ""
+        throw new Error("Error during #{fromMessage} column '#{@_toCol}'#{valueMessage}: #{error.message}")
+    else
+      Q(accRow)
 
   transformHeader: (headerAccumulator, originalHeader) ->
     _.map headerAccumulator, (acc) =>
@@ -233,8 +152,8 @@ class ColumnGenerator extends ColumnMapping
       else
         acc
 
-  priority: () ->
-    @_priority or 3000
+  _defaultPriority: () ->
+    if @_type is 'addColumn' then 3000 else 2000
 
 ###
   Transforms one object into another object accoring to the mapping configuration
@@ -282,11 +201,9 @@ module.exports =
   ColumnTransformer: ColumnTransformer
   CopyFromOriginalTransformer: CopyFromOriginalTransformer
   RemoveColumnsTransformer: RemoveColumnsTransformer
-  ColumnGenerator: ColumnGenerator
   Mapping: Mapping
   defaultColumnMappers: [
     ColumnTransformer,
     CopyFromOriginalTransformer,
     RemoveColumnsTransformer
-    ColumnGenerator
   ]

@@ -10,84 +10,84 @@ class ValueTransformer
   @create: (options) -> util.abstractMethod() # promise with transformer
   @supports: (options) -> util.abstractMethod() # boolean - whether options are supported
 
-  transform: (value) -> util.abstractMethod() # transformed value
+  transform: (value, row) -> util.abstractMethod() # transformed value promise
 
 class ConstantTransformer extends ValueTransformer
-  @create: (options) ->
-    Q(new ConstantTransformer(options))
+  @create: (transformers, options) ->
+    Q(new ConstantTransformer(transformers, options))
 
   @supports: (options) ->
     options.type is 'constant'
 
-  constructor: (options) ->
+  constructor: (transformers, options) ->
     @_value = options.value
 
-  transform: (value) ->
+  transform: (value, row) ->
     @_value
 
 class UpperCaseTransformer extends ValueTransformer
-  @create: (options) ->
-    Q(new UpperCaseTransformer(options))
+  @create: (transformers, options) ->
+    Q(new UpperCaseTransformer(transformers, options))
 
   @supports: (options) ->
     options.type is 'upper'
 
-  constructor: (options) ->
+  constructor: (transformers, options) ->
 
-  transform: (value) ->
+  transform: (value, row) ->
     value.toUpperCase()
 
 class LowerCaseTransformer extends ValueTransformer
-  @create: (options) ->
-    Q(new LowerCaseTransformer(options))
+  @create: (transformers, options) ->
+    Q(new LowerCaseTransformer(transformers, options))
 
   @supports: (options) ->
     options.type is 'lower'
 
-  constructor: (options) ->
+  constructor: (transformers, options) ->
 
-  transform: (value) ->
+  transform: (value, row) ->
     value.toLowerCase()
 
 class RandomTransformer extends ValueTransformer
-  @create: (options) ->
-    Q(new RandomTransformer(options))
+  @create: (transformers, options) ->
+    Q(new RandomTransformer(transformers, options))
 
   @supports: (options) ->
     options.type is 'random'
 
-  constructor: (options) ->
+  constructor: (transformers, options) ->
     @_size = options.size
     @_chars = options.chars
 
-  transform: (value) ->
+  transform: (value, row) ->
     rndChars = _.map _.range(@_size), (idx) =>
       @_chars.charAt _.random(0, @_chars.length - 1)
 
     rndChars.join ''
 
 class RegexpTransformer extends ValueTransformer
-  @create: (options) ->
-    Q(new RegexpTransformer(options))
+  @create: (transformers, options) ->
+    Q(new RegexpTransformer(transformers, options))
 
   @supports: (options) ->
     options.type is 'regexp'
 
-  constructor: (options) ->
+  constructor: (transformers, options) ->
     @_find = new RegExp(options.find, 'g')
     @_replace = options.replace
 
-  transform: (value) ->
+  transform: (value, row) ->
     value.replace @_find, @_replace
 
 class LookupTransformer extends ValueTransformer
-  @create: (options) ->
-    (new LookupTransformer(options))._init()
+  @create: (transformers, options) ->
+    (new LookupTransformer(transformers, options))._init()
 
   @supports: (options) ->
     options.type is 'lookup'
 
-  constructor: (options) ->
+  constructor: (transformers, options) ->
     @_header = options.header
     @_keyCol = options.keyCol
     @_valueCol = options.valueCol
@@ -129,7 +129,7 @@ class LookupTransformer extends ValueTransformer
 
     d.promise
 
-  transform: (value) ->
+  transform: (value, row) ->
     keyIdx = if _.isString @_keyCol then @_headers.indexOf(@_keyCol) else @_keyCol
     valueIdx = if _.isString @_valueCol then @_headers.indexOf(@_valueCol) else @_valueCol
 
@@ -145,6 +145,48 @@ class LookupTransformer extends ValueTransformer
       valuesMessage = @_values.join "; "
       throw new Error("Unfortunately, lookup transformation failed for value '#{value}'.#{fileMessage} Values: #{valuesMessage}")
 
+class MultipartStringTransformer extends ValueTransformer
+  @create: (transformers, options) ->
+    new MultipartStringTransformer(transformers, options)._init()
+
+  @supports: (options) ->
+    options.type is 'multipartString'
+
+  constructor: (transformers, options) ->
+    @_transformers = transformers
+    @_parts = _.clone options.parts
+
+  _init: () ->
+    promises = _.map @_parts, (part) =>
+      util.initValueTransformers @_transformers, part.valueTransformers
+      .then (vt) ->
+        part.valueTransformers = vt
+        part
+
+    Q.all promises
+    .then (parts) =>
+      this
+
+  transform: (value, row) ->
+    partialValuePromises = _.map @_parts, (part, idx) =>
+      {size, pad, fromCol, valueTransformers} = part
+
+      value = row[fromCol]
+
+      util.transformValue(valueTransformers, value, row)
+      .then (transformed) ->
+        if transformed.length < size and pad
+          _s.pad(transformed, size, pad)
+        else if transformed.length is size
+          transformed
+        else
+          valueMessage = if value then " with current value '#{value}'" else ""
+          throw new Error("Generated column part size (#{transformed.length} - '#{transformed}') is smaller than expected size (#{size}) and no padding is defined for this column. Source column '#{fromCol}' (part #{idx})#{valueMessage}.")
+
+    Q.all partialValuePromises
+    .then (partialValues) ->
+      partialValues.join ''
+
 module.exports =
   ValueTransformer: ValueTransformer
   ConstantTransformer: ConstantTransformer
@@ -153,11 +195,13 @@ module.exports =
   RandomTransformer: RandomTransformer
   RegexpTransformer: RegexpTransformer
   LookupTransformer: LookupTransformer
+  MultipartStringTransformer: MultipartStringTransformer
   defaultTransformers: [
     ConstantTransformer,
     UpperCaseTransformer,
     LowerCaseTransformer,
     RandomTransformer,
     RegexpTransformer,
-    LookupTransformer
+    LookupTransformer,
+    MultipartStringTransformer
   ]

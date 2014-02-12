@@ -50,3 +50,21 @@ module.exports =
     throw new Error('Method not implemented!')
 
   defaultGroup: () -> "default"
+
+  transformValue: (valueTransformers, value, row) ->
+    safeValue = if @nonEmpty(value) then value else ''
+    _.reduce valueTransformers, ((acc, transformer) -> acc.then((v) -> transformer.transform(v, row))), Q(safeValue)
+
+  initValueTransformers: (transformers, transformerConfig) ->
+    if transformerConfig
+      promises = _.map transformerConfig, (config) ->
+        found  = _.find transformers, (t) -> t.supports(config)
+
+        if found
+          found.create transformers, config
+        else
+          throw new Error("unsupported value transformer type: #{config.type}")
+
+      Q.all promises
+    else
+      Q([])
