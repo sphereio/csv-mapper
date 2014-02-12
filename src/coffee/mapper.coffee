@@ -15,13 +15,22 @@ util = require '../lib/util'
     outCsv - output CSV file (optional)
     includesHeaderRow - (optional - by default true)
     mapping
+    csvDelimiter - (optional - by default `,`)
+    csvQuote - (optional - by default `"`)
 ###
 class Mapper
   _defaultOptions:
     includesHeaderRow: true
 
   constructor: (options = {}) ->
-    @_options = _.extend {}, @_defaultOptions, options
+    @_inCsv = options.inCsv
+    @_outCsv = options.outCsv
+
+    @_csvDelimiter = options.csvDelimiter or ','
+    @_csvQuote = options.csvQuote or '"'
+
+    @_includesHeaderRow = options.includesHeaderRow or true
+    @_mapping = options.mapping
 
   processCsv: (csvIn, csvOut, listeners = []) ->
     d = Q.defer()
@@ -29,17 +38,23 @@ class Mapper
     headers = null
     newHeaders = null
 
-    c = csv().from.stream(csvIn).to.stream(csvOut)
+    cvsOptions =
+      delimiter: @_csvDelimiter
+      quote: @_csvQuote
+
+    c = csv()
+    .from.stream(csvIn, cvsOptions)
+    .to.stream(csvOut, cvsOptions)
     .transform (row, idx, done) =>
-      if idx is 0 and @_options.includesHeaderRow
+      if idx is 0 and @_includesHeaderRow
         headers = row
-        newHeaders = @_options.mapping.transformHeader row
+        newHeaders = @_mapping.transformHeader row
         done null, newHeaders
       else
         if idx is 0
           headers = _.map _.range(row.length), (idx) -> "#{idx}"
 
-        @_options.mapping.transformRow @_convertToObject(headers, row)
+        @_mapping.transformRow @_convertToObject(headers, row)
         .then (converted) =>
           done null, @_convertFromObject(newHeaders, converted)
         .fail (error) ->
@@ -65,9 +80,9 @@ class Mapper
 
   run: ->
     # TODO: introduce concept for the the second (additional) CSV file that stores retailer update info
-    Q.spread [util.fileStreamOrStdin(@_options.inCsv), util.fileStreamOrStdout(@_options.outCsv)], (csvIn, csvOut) =>
+    Q.spread [util.fileStreamOrStdin(@_inCsv), util.fileStreamOrStdout(@_outCsv)], (csvIn, csvOut) =>
       @processCsv(csvIn, csvOut)
       .finally () =>
-        util.closeStream(csvOut) if util.nonEmpty @_options.outCsv
+        util.closeStream(csvOut) if util.nonEmpty @_outCsv
 
 exports.Mapper = Mapper

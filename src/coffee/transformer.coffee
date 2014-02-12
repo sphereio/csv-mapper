@@ -92,6 +92,8 @@ class LookupTransformer extends ValueTransformer
     @_keyCol = options.keyCol
     @_valueCol = options.valueCol
     @_file = options.file
+    @_csvDelimiter = options.csvDelimiter or ','
+    @_csvQuote = options.csvQuote or '"'
 
     if options.values
       @_headers = options.values.shift()
@@ -112,8 +114,12 @@ class LookupTransformer extends ValueTransformer
   _parseCsv: (csvText) ->
     d = Q.defer()
 
+    cvsOptions =
+      delimiter: @_csvDelimiter
+      quote: @_csvQuote
+
     csv()
-    .from("#{csvText}")
+    .from("#{csvText}", cvsOptions)
     .to.array (data) =>
       d.resolve
         headers: if @_header then data.shift() else []

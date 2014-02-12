@@ -11,6 +11,8 @@ optimist = require('optimist')
 .describe('clientSecret', 'Sphere.io HTTP API client secret.')
 .describe('inCsv', 'The input product CSV file (optional, STDIN would be used if not specified).')
 .describe('outCsv', 'The output product CSV file (optional, STDOUT would be used if not specified).')
+.describe('csvDelimiter', 'CSV delimiter (by default ,).')
+.describe('csvQuote', 'CSV quote (by default ").')
 .describe('mapping', 'Mapping JSON file or URL.')
 .demand(['mapping'])
 #.demand(['projectKey', 'clientId', 'clientSecret', 'mapping'])
@@ -40,6 +42,8 @@ new mapping.Mapping
   new Mapper
     inCsv: argv.inCsv
     outCsv: argv.outCsv
+    csvDelimiter: argv.csvDelimiter
+    csvQuote: argv.csvQuote
     mapping: mapping
   .run()
 .then (count) ->
