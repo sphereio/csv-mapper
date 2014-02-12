@@ -1,3 +1,6 @@
+util = require '../lib/util'
+_ = require('underscore')._
+
 optimist = require('optimist')
 .usage('Usage: $0 --projectKey [key] --clientId [id] --clientSecret [secret]')
 .alias('projectKey', 'k')
@@ -14,6 +17,8 @@ optimist = require('optimist')
 .describe('csvDelimiter', 'CSV delimiter (by default ,).')
 .describe('csvQuote', 'CSV quote (by default ").')
 .describe('mapping', 'Mapping JSON file or URL.')
+.describe('group', "The column group that should be used (by default '#{util.defaultGroup()}').")
+.describe('additionalOutCsv', 'Addition output CSV files separated by comma `,` and optionally prefixed with `groupName:`.')
 .demand(['mapping'])
 #.demand(['projectKey', 'clientId', 'clientSecret', 'mapping'])
 
@@ -33,6 +38,19 @@ if (argv.help)
 #    client_id: argv.clientId
 #    client_secret: argv.clientSecret
 
+parseAdditionalOutCsv = (config) ->
+  if not config
+    []
+  else
+    _.map config.split(/,/), (c) ->
+      parts = c.split(/:/)
+
+      if parts.length is 2
+        {group: parts[0], file: parts[1]}
+      else
+        {group: util.defaultGroup(), file: parts[0]}
+
+
 new mapping.Mapping
   mappingFile: argv.mapping
   transformers: transformer.defaultTransformers
@@ -45,6 +63,8 @@ new mapping.Mapping
     csvDelimiter: argv.csvDelimiter
     csvQuote: argv.csvQuote
     mapping: mapping
+    group: argv.group
+    additionalOutCsv: parseAdditionalOutCsv(argv.additionalOutCsv)
   .run()
 .then (count) ->
   process.exit 0

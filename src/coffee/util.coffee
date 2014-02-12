@@ -48,3 +48,5 @@ module.exports =
 
   notImplementedYet: () ->
     throw new Error('Method not implemented!')
+
+  defaultGroup: () -> "default"

@@ -17,6 +17,8 @@ util = require '../lib/util'
     mapping
     csvDelimiter - (optional - by default `,`)
     csvQuote - (optional - by default `"`)
+    group - the group of the main CSV
+    additionalOutCsv
 ###
 class Mapper
   _defaultOptions:
@@ -32,40 +34,77 @@ class Mapper
     @_includesHeaderRow = options.includesHeaderRow or true
     @_mapping = options.mapping
 
-  processCsv: (csvIn, csvOut, listeners = []) ->
+    @_group = options.group or util.defaultGroup()
+    @_additionalOutCsv = options.additionalOutCsv
+
+  processCsv: (csvIn, csvOut, additionalWriters) ->
     d = Q.defer()
 
+    writers = _.map additionalWriters, (w) ->
+      w.headers = null
+      w.newHeaders = null
+      w
+
+    writers.unshift
+      group: @_group
+      writer: null
+      headers: null
+      newHeaders: null
+
+    requiredGroups = _.map writers, (w) -> w.group
+
     headers = null
-    newHeaders = null
 
-    cvsOptions =
-      delimiter: @_csvDelimiter
-      quote: @_csvQuote
-
-    c = csv()
-    .from.stream(csvIn, cvsOptions)
-    .to.stream(csvOut, cvsOptions)
+    csv()
+    .from.stream(csvIn, @_cvsOptions())
+    .to.stream(csvOut, @_cvsOptions())
     .transform (row, idx, done) =>
       if idx is 0 and @_includesHeaderRow
         headers = row
-        newHeaders = @_mapping.transformHeader row
-        done null, newHeaders
+        newHeadersPerGroup = @_mapping.transformHeader requiredGroups, row
+        toReport = null
+
+        _.each writers, (w) ->
+          w.newHeaders = _.find(newHeadersPerGroup, (h) -> h.group is w.group).newHeaders
+
+          if w.writer
+            w.writer.write w.newHeaders
+          else
+            toReport = w.newHeaders
+
+        done null, toReport
       else
         if idx is 0
           headers = _.map _.range(row.length), (idx) -> "#{idx}"
+          newHeadersPerGroup = @_mapping.transformHeader requiredGroups, headers
 
-        @_mapping.transformRow @_convertToObject(headers, row)
-        .then (converted) =>
-          done null, @_convertFromObject(newHeaders, converted)
+          _.each writers, (w) ->
+            w.newHeaders = _.find(newHeadersPerGroup, (h) -> h.group is w.group).newHeaders
+
+        @_mapping.transformRow requiredGroups, @_convertToObject(headers, row)
+        .then (convertedPerGroup) =>
+          toReport = null
+
+          _.each writers, (w) =>
+            result = @_convertFromObject(w.newHeaders, _.find(convertedPerGroup, (c) -> c.group is w.group).row)
+
+            if w.writer
+              w.writer.write result
+            else
+              toReport = result
+
+          done null, toReport
         .fail (error) ->
           done error, null
         .done()
-
-    csvWithListenars = _.reduce(listeners, ((c, listen) -> c.on 'record', listen), c)
-
-    csvWithListenars.on('end', (count) -> d.resolve(count)).on('error', (error) -> d.reject(error))
+    .on('end', (count) -> d.resolve(count))
+    .on('error', (error) -> d.reject(error))
 
     d.promise
+
+  _cvsOptions: () ->
+    delimiter: @_csvDelimiter
+    quote: @_csvQuote
 
   _convertToObject: (properties, row) ->
     reduceFn = (acc, nameWithIdx) ->
@@ -78,11 +117,37 @@ class Mapper
   _convertFromObject: (properties, obj) ->
     _.map properties, (name) -> obj[name]
 
+  _createAdditionalWriters: (csvDefs) ->
+    _.map csvDefs, (csvDef) =>
+      stream = fs.createWriteStream(csvDef.file)
+      writer = csv().to.stream(stream, @_cvsOptions())
+
+      closeWriterFn = () ->
+        d = Q.defer()
+
+        writer
+        .on('end', (count) -> d.resolve(count))
+        .on('error', (error) -> d.reject(error))
+        .end()
+
+        d.promise
+
+      closeFn = () ->
+        closeWriterFn()
+        .finally () =>
+          util.closeStream(stream)
+
+      {group: csvDef.group, writer: writer, close: closeFn}
+
   run: ->
-    # TODO: introduce concept for the the second (additional) CSV file that stores retailer update info
     Q.spread [util.fileStreamOrStdin(@_inCsv), util.fileStreamOrStdout(@_outCsv)], (csvIn, csvOut) =>
-      @processCsv(csvIn, csvOut)
+      additionalWriters = @_createAdditionalWriters(@_additionalOutCsv)
+
+      @processCsv(csvIn, csvOut, additionalWriters)
       .finally () =>
-        util.closeStream(csvOut) if util.nonEmpty @_outCsv
+        promises = _.map additionalWriters, (writer) -> writer.close()
+        promises.push(util.closeStream(csvOut)) if util.nonEmpty @_outCsv
+        Q.all promises
+
 
 exports.Mapper = Mapper
