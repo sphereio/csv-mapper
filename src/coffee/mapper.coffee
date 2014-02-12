@@ -14,21 +14,21 @@ class ValueTransformer
 class ConstantTransformer extends ValueTransformer
   init: (options) ->
     @_value = options.value
-    Q(@)
+    Q(this)
 
   transform: (value) ->
     @_value
 
 class UpperCaseTransformer extends ValueTransformer
   init: (options) ->
-    Q(@)
+    Q(this)
 
   transform: (value) ->
     value.toUpperCase()
 
 class LowerCaseTransformer extends ValueTransformer
   init: (options) ->
-    Q(@)
+    Q(this)
 
   transform: (value) ->
     value.toLowerCase()
@@ -37,7 +37,7 @@ class RandomTransformer extends ValueTransformer
   init: (options) ->
     @_size = options.size
     @_chars = options.chars
-    Q(@)
+    Q(this)
 
   transform: (value) ->
     rndChars = _.map _.range(@_size), (idx) =>
@@ -49,7 +49,7 @@ class RegexpTransformer extends ValueTransformer
   init: (options) ->
     @_find = new RegExp(options.find, 'g')
     @_replace = options.replace
-    Q(@)
+    Q(this)
 
   transform: (value) ->
     value.replace @_find, @_replace
@@ -72,9 +72,9 @@ class LookupTransformer extends ValueTransformer
       .then (values) =>
         @_headers = values.headers
         @_values = values.data
-        @
+        this
     else
-      Q(@)
+      Q(this)
 
   _parseCsv: (csvText) ->
     d = Q.defer()
@@ -91,18 +91,20 @@ class LookupTransformer extends ValueTransformer
     d.promise
 
   transform: (value) ->
-    keyIdx = if typeof @_keyCol == "string" then @_headers.indexOf(@_keyCol) else @_keyCol
-    valueIdx = if typeof @_valueCol == "string" then @_headers.indexOf(@_valueCol) else @_valueCol
+    keyIdx = if _.isString @_keyCol then @_headers.indexOf(@_keyCol) else @_keyCol
+    valueIdx = if _.isString @_valueCol then @_headers.indexOf(@_valueCol) else @_valueCol
 
     if keyIdx < 0 or valueIdx < 0
       throw new Error("Something is wrong in lookup config: key '#{@_keyCol}' or value '#{@_valueCol}' column not found by name!.")
 
-    found = _.find @_values, (row) -> row[keyIdx] == value
+    found = _.find @_values, (row) -> row[keyIdx] is value
 
     if found
       found[valueIdx]
     else
-      throw new Error("Unfortunately, lookup transformation filed for value '#{value}'.#{if @_file then "File: #{@_file}." else ""} Values: #{@_values.join "; "}")
+      fileMessage = if @_file then "File: #{@_file}." else ""
+      valuesMessage = @_values.join "; "
+      throw new Error("Unfortunately, lookup transformation failed for value '#{value}'.#{fileMessage} Values: #{valuesMessage}")
 
 class ColumnMapping
   init: (options) -> util.abstractMethod() # promise with this
@@ -149,7 +151,7 @@ class ColumnTransformer extends ColumnMapping
     @_initValueTransformers options.valueTransformers
     .then (vt) =>
       @_valueTransformers = vt
-      @
+      this
 
   map: (origRow, accRow) ->
     value = if accRow[@_fromCol] then accRow[@_fromCol] else origRow[@_fromCol]
@@ -165,7 +167,7 @@ class ColumnTransformer extends ColumnMapping
     @_toCol
 
   priority: () ->
-    if @_priority then @_priority else 500
+    @_priority or 2000
 
 class ColumnGenerator extends ColumnMapping
   init: (options) ->
@@ -183,14 +185,11 @@ class ColumnGenerator extends ColumnMapping
 
     Q.all promises
     .then (parts) =>
-      @
+      this
 
   map: (origRow, accRow) ->
     partialValues = _.map @_parts, (part, idx) =>
-      size = part.size
-      pad = part.pad
-      fromCol = part.fromCol
-      valueTransformers = part.valueTransformers
+      {size, pad, fromCol, valueTransformers} = part
 
       value = if accRow[fromCol] then accRow[fromCol] else origRow[fromCol]
 
@@ -201,7 +200,7 @@ class ColumnGenerator extends ColumnMapping
 
       if transformed.length < size and pad
         _s.pad(transformed, size, pad)
-      else if transformed.length = size
+      else if transformed.length is size
         transformed
       else
         throw new Error("Generated column part size (#{transformed.length} - '#{transformed}') is smaller than expected size (#{size}) and no padding is defined for this column. Source column '#{fromCol}', generated column '#{@_toCol}' (part #{idx}) with current value '#{value}'.")
@@ -218,7 +217,7 @@ class ColumnGenerator extends ColumnMapping
     @_toCol
 
   priority: () ->
-    if @_priority then @_priority else 1000
+    @_priority or 3000
 
 ###
   Transforms one object into another object accoring to the mapping configuration
@@ -235,7 +234,7 @@ class Mapping
       @_constructMapping(JSON.parse(contents))
     .then (mapping) =>
       @_columnMapping = mapping
-      @
+      this
 
   _constructMapping: (mappingJson) ->
     columnPromises = _.map mappingJson.columnMapping, (elem) ->
@@ -284,14 +283,13 @@ class Mapper
 
     c = csv().from.stream(csvIn).to.stream(csvOut)
     .transform (row, idx, done) =>
-      if idx == 0 and @_options.includesHeaderRow
+      if idx is 0 and @_options.includesHeaderRow
         headers = row
         newHeaders = @_options.mapping.transformHeader row
         done null, newHeaders
       else
-        if idx == 0
-          headers = _.map _.range(row.length), (idx) ->
-            "#{idx}"
+        if idx is 0
+          headers = _.map _.range(row.length), (idx) -> "#{idx}"
 
         @_options.mapping.transformRow @_convertToObject(headers, row)
         .then (converted) =>
@@ -315,9 +313,7 @@ class Mapper
     _.reduce _.map(properties, ((prop, idx) -> [prop, idx])), reduceFn, {}
 
   _convertFromObject: (properties, obj) ->
-    foo = _.map properties, (name) ->
-      obj[name]
-    foo
+    _.map properties, (name) -> obj[name]
 
   run: ->
     # TODO: introduce concept for the the second (additional) CSV file that stores retailer update info
