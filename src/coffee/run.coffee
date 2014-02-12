@@ -16,8 +16,8 @@ optimist = require('optimist')
 #.demand(['projectKey', 'clientId', 'clientSecret', 'mapping'])
 
 Mapper = require('../main').Mapper
-Mapping = require('../main').Mapping
 transformer = require('../main').transformer
+mapping = require('../main').mapping
 
 argv = optimist.argv
 
@@ -31,9 +31,10 @@ if (argv.help)
 #    client_id: argv.clientId
 #    client_secret: argv.clientSecret
 
-new Mapping
+new mapping.Mapping
   mappingFile: argv.mapping
   transformers: transformer.defaultTransformers
+  columnMappers: mapping.defaultColumnMappers
 .init()
 .then (mapping) ->
   new Mapper

@@ -1,6 +1,7 @@
 mapper = require('./lib/mapper')
 transformer = require('./lib/transformer')
+mapping = require('./lib/mapping')
 
 exports.Mapper = mapper.Mapper
-exports.Mapping = mapper.Mapping
 exports.transformer = transformer
+exports.mapping = mapping
