@@ -67,6 +67,7 @@ new mapping.Mapping
     additionalOutCsv: parseAdditionalOutCsv(argv.additionalOutCsv)
   .run()
 .then (count) ->
+  console.info "\n\nProcessed #{count} lines"
   process.exit 0
 .fail (error) ->
   console.error error.stack

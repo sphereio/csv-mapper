@@ -40,6 +40,8 @@ class Mapper
   processCsv: (csvIn, csvOut, additionalWriters) ->
     d = Q.defer()
 
+    # TODO: Cleanup this mess
+
     writers = _.map additionalWriters, (w) ->
       w.headers = null
       w.newHeaders = null
