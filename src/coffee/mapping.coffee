@@ -11,7 +11,7 @@ class ColumnMapping
   @supports: (options) -> util.abstractMethod() # boolean - whether options are supported
 
   map: (origRow, accRow) -> util.abstractMethod() # mapped row promice
-  columnName: () -> util.abstractMethod() # string
+  transformHeader: (headerAccumulator, originalHeader) -> util.abstractMethod() # array of string with the new updated header
   priority: () -> util.abstractMethod() # int
 
   _initValueTransformers: (transformers, transformerConfig) ->
@@ -31,6 +31,61 @@ class ColumnMapping
   _transformValue: (valueTransformers, value) ->
     safeValue = if util.nonEmpty(value) then value else ''
     _.reduce valueTransformers, ((acc, transformer) -> transformer.transform(acc)), safeValue
+
+class CopyFromOriginalTransformer extends ColumnMapping
+  @create: (transformers, options) ->
+    Q(new CopyFromOriginalTransformer(transformers, options))
+
+  @supports: (options) ->
+    options.type is 'copyFromOriginal'
+
+  constructor: (transformers, options) ->
+    @_includeCols = options.includeCols
+    @_excludeCols = options.excludeCols
+    @_priority = options.priority
+
+  map: (origRow, accRow) ->
+    reduceFn = (acc, name) =>
+      if @_include(name)
+        acc[name] = origRow[name]
+
+      acc
+
+    Q(_.reduce(_.keys(origRow), reduceFn, accRow))
+
+  _include: (name) ->
+    (not @_includeCols or _.contains(@_includeCols, name)) and (not @_excludeCols or not _.contains(@_excludeCols, name))
+
+  transformHeader: (headerAccumulator, originalHeader) ->
+    headerAccumulator.concat _.filter(originalHeader, ((name) => @_include(name)))
+
+  priority: () ->
+    @_priority or 1000
+
+class RemoveColumnsTransformer extends ColumnMapping
+  @create: (transformers, options) ->
+    Q(new RemoveColumnsTransformer(transformers, options))
+
+  @supports: (options) ->
+    options.type is 'removeColumns'
+
+  constructor: (transformers, options) ->
+    @_cols = options.cols or []
+
+  map: (origRow, accRow) ->
+    reduceFn = (acc, name) =>
+      if _.contains(@_cols, name)
+        delete acc[name]
+
+      acc
+
+    Q(_.reduce(_.keys(accRow), reduceFn, accRow))
+
+  transformHeader: (headerAccumulator, originalHeader) ->
+    _.filter(headerAccumulator, ((name) => not _.contains(@_cols, name)))
+
+  priority: () ->
+    @_priority or 1500
 
 class ColumnTransformer extends ColumnMapping
   @create: (transformers, options) ->
@@ -63,8 +118,8 @@ class ColumnTransformer extends ColumnMapping
 
     Q(accRow)
 
-  columnName: () ->
-    @_toCol
+  transformHeader: (headerAccumulator, originalHeader) ->
+    headerAccumulator.concat [@_toCol]
 
   priority: () ->
     @_priority or 2000
@@ -122,8 +177,8 @@ class ColumnGenerator extends ColumnMapping
 
     Q(accRow)
 
-  columnName: () ->
-    @_toCol
+  transformHeader: (headerAccumulator, originalHeader) ->
+    headerAccumulator.concat [@_toCol]
 
   priority: () ->
     @_priority or 3000
@@ -162,8 +217,7 @@ class Mapping
     Q.all columnPromises
 
   transformHeader: (columnNames) ->
-    _.map @_columnMapping, (mapping) ->
-      mapping.columnName()
+    _.reduce @_columnMapping, ((acc, mapping) -> mapping.transformHeader(acc, columnNames)), []
 
   transformRow: (row) ->
     mappingsSorted = _.sortBy @_columnMapping, (mapping) -> mapping.priority()
@@ -173,9 +227,13 @@ class Mapping
 module.exports =
   ColumnMapping: ColumnMapping
   ColumnTransformer: ColumnTransformer
+  CopyFromOriginalTransformer: CopyFromOriginalTransformer
+  RemoveColumnsTransformer: RemoveColumnsTransformer
   ColumnGenerator: ColumnGenerator
   Mapping: Mapping
   defaultColumnMappers: [
     ColumnTransformer,
+    CopyFromOriginalTransformer,
+    RemoveColumnsTransformer
     ColumnGenerator
   ]
