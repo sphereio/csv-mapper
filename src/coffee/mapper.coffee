@@ -7,132 +7,21 @@ _s = require 'underscore.string'
 
 util = require '../lib/util'
 
-class ValueTransformer
-  init: (options) -> util.abstractMethod() # promise with this
-  transform: (value) -> util.abstractMethod() # transformed value
-
-class ConstantTransformer extends ValueTransformer
-  init: (options) ->
-    @_value = options.value
-    Q(this)
-
-  transform: (value) ->
-    @_value
-
-class UpperCaseTransformer extends ValueTransformer
-  init: (options) ->
-    Q(this)
-
-  transform: (value) ->
-    value.toUpperCase()
-
-class LowerCaseTransformer extends ValueTransformer
-  init: (options) ->
-    Q(this)
-
-  transform: (value) ->
-    value.toLowerCase()
-
-class RandomTransformer extends ValueTransformer
-  init: (options) ->
-    @_size = options.size
-    @_chars = options.chars
-    Q(this)
-
-  transform: (value) ->
-    rndChars = _.map _.range(@_size), (idx) =>
-      @_chars.charAt _.random(0, @_chars.length - 1)
-
-    rndChars.join ''
-
-class RegexpTransformer extends ValueTransformer
-  init: (options) ->
-    @_find = new RegExp(options.find, 'g')
-    @_replace = options.replace
-    Q(this)
-
-  transform: (value) ->
-    value.replace @_find, @_replace
-
-class LookupTransformer extends ValueTransformer
-  init: (options) ->
-    @_header = options.header
-    @_keyCol = options.keyCol
-    @_valueCol = options.valueCol
-    @_file = options.file
-
-    if options.values
-      @_headers = options.values.shift()
-      @_values = options.values
-
-    if (util.nonEmpty @_file)
-      util.loadFile @_file
-      .then (contents) =>
-        @_parseCsv contents
-      .then (values) =>
-        @_headers = values.headers
-        @_values = values.data
-        this
-    else
-      Q(this)
-
-  _parseCsv: (csvText) ->
-    d = Q.defer()
-
-    csv()
-    .from("#{csvText}")
-    .to.array (data) =>
-      d.resolve
-        headers: if @_header then data.shift() else []
-        data: data
-    .on 'error', (error) ->
-      d.reject error
-
-    d.promise
-
-  transform: (value) ->
-    keyIdx = if _.isString @_keyCol then @_headers.indexOf(@_keyCol) else @_keyCol
-    valueIdx = if _.isString @_valueCol then @_headers.indexOf(@_valueCol) else @_valueCol
-
-    if keyIdx < 0 or valueIdx < 0
-      throw new Error("Something is wrong in lookup config: key '#{@_keyCol}' or value '#{@_valueCol}' column not found by name!.")
-
-    found = _.find @_values, (row) -> row[keyIdx] is value
-
-    if found
-      found[valueIdx]
-    else
-      fileMessage = if @_file then "File: #{@_file}." else ""
-      valuesMessage = @_values.join "; "
-      throw new Error("Unfortunately, lookup transformation failed for value '#{value}'.#{fileMessage} Values: #{valuesMessage}")
-
 class ColumnMapping
   init: (options) -> util.abstractMethod() # promise with this
   map: (origRow, accRow) -> util.abstractMethod() # mapped row promice
   columnName: () -> util.abstractMethod() # string
   priority: () -> util.abstractMethod() # int
 
-  _initValueTransformers: (transformers) ->
-    if transformers
-      promises = _.map transformers, (t) ->
-        transformer =
-          switch t.type
-            when 'constant'
-              new ConstantTransformer()
-            when 'upper'
-              new UpperCaseTransformer()
-            when 'lower'
-              new LowerCaseTransformer()
-            when 'random'
-              new RandomTransformer()
-            when 'regexp'
-              new RegexpTransformer()
-            when 'lookup'
-              new LookupTransformer()
-            else
-              throw new Error("Unknown transformaer type: #{t.type}")
+  _initValueTransformers: (transformers, transformerConfig) ->
+    if transformerConfig
+      promises = _.map transformerConfig, (config) ->
+        found  = _.find transformers, (t) -> t.supports(config)
 
-        transformer.init t
+        if found
+          found.create config
+        else
+          throw new Error("unsupported value transformer type: #{config}")
 
       Q.all promises
     else
@@ -143,12 +32,15 @@ class ColumnMapping
     _.reduce valueTransformers, ((acc, transformer) -> transformer.transform(acc)), safeValue
 
 class ColumnTransformer extends ColumnMapping
+  constructor: (options) ->
+    @_transformers = options.transformers
+
   init: (options) ->
     @_fromCol = options.fromCol
     @_toCol = options.toCol
     @_priority = options.priority
 
-    @_initValueTransformers options.valueTransformers
+    @_initValueTransformers @_transformers, options.valueTransformers
     .then (vt) =>
       @_valueTransformers = vt
       this
@@ -170,6 +62,9 @@ class ColumnTransformer extends ColumnMapping
     @_priority or 2000
 
 class ColumnGenerator extends ColumnMapping
+  constructor: (options) ->
+    @_transformers = options.transformers
+
   init: (options) ->
     @_toCol = options.toCol
     @_projectUnique = options.projectUnique
@@ -178,7 +73,7 @@ class ColumnGenerator extends ColumnMapping
     @_priority = options.priority
 
     promises = _.map @_parts, (part) =>
-      @_initValueTransformers part.valueTransformers
+      @_initValueTransformers @_transformers, part.valueTransformers
       .then (vt) ->
         part.valueTransformers = vt
         part
@@ -224,6 +119,7 @@ class ColumnGenerator extends ColumnMapping
 
   Options:
     mappingFile
+    transformers
 ###
 class Mapping
   constructor: (@_options = {}) ->
@@ -237,12 +133,12 @@ class Mapping
       this
 
   _constructMapping: (mappingJson) ->
-    columnPromises = _.map mappingJson.columnMapping, (elem) ->
+    columnPromises = _.map mappingJson.columnMapping, (elem) =>
       c = switch elem.type
         when 'columnTransformer'
-          new ColumnTransformer()
+          new ColumnTransformer({transformers: @_options.transformers})
         when 'columnGenerator'
-          new ColumnGenerator()
+          new ColumnGenerator({transformers: @_options.transformers})
         else
           throw new Error("Unknown solumn mapping type: #{elem.type}")
 

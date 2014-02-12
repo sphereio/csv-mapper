@@ -17,6 +17,7 @@ optimist = require('optimist')
 
 Mapper = require('../main').Mapper
 Mapping = require('../main').Mapping
+transformer = require('../main').transformer
 
 argv = optimist.argv
 
@@ -32,6 +33,7 @@ if (argv.help)
 
 new Mapping
   mappingFile: argv.mapping
+  transformers: transformer.defaultTransformers
 .init()
 .then (mapping) ->
   new Mapper
