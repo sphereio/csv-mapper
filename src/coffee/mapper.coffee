@@ -128,28 +128,32 @@ class Mapper
         d = Q.defer()
 
         writer
-        .on('end', (count) -> d.resolve(count))
-        .on('error', (error) -> d.reject(error))
+        .on 'end', (count) -> d.resolve(count)
+        .on 'error', (error) -> d.reject(error)
         .end()
 
         d.promise
 
       closeFn = () ->
         closeWriterFn()
-        .finally () =>
+        .finally () ->
           util.closeStream(stream)
 
       {group: csvDef.group, writer: writer, close: closeFn}
 
   run: ->
     Q.spread [util.fileStreamOrStdin(@_inCsv), util.fileStreamOrStdout(@_outCsv)], (csvIn, csvOut) =>
-      additionalWriters = @_createAdditionalWriters(@_additionalOutCsv)
+      additionalWriters = @_createAdditionalWriters @_additionalOutCsv
 
-      @processCsv(csvIn, csvOut, additionalWriters)
-      .finally () =>
+      # strange, but error propagation does not wotk if the return value of the `finally` is returned
+      p = @processCsv(csvIn, csvOut, additionalWriters)
+      p.finally () =>
         promises = _.map additionalWriters, (writer) -> writer.close()
         promises.push(util.closeStream(csvOut)) if util.nonEmpty @_outCsv
+
         Q.all promises
+      p
+
 
 
 exports.Mapper = Mapper

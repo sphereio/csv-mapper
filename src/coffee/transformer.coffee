@@ -23,7 +23,7 @@ class ConstantTransformer extends ValueTransformer
     @_value = options.value
 
   transform: (value, row) ->
-    @_value
+    Q(@_value)
 
 class UpperCaseTransformer extends ValueTransformer
   @create: (transformers, options) ->
@@ -35,7 +35,7 @@ class UpperCaseTransformer extends ValueTransformer
   constructor: (transformers, options) ->
 
   transform: (value, row) ->
-    value.toUpperCase()
+    Q(value.toUpperCase())
 
 class LowerCaseTransformer extends ValueTransformer
   @create: (transformers, options) ->
@@ -47,7 +47,7 @@ class LowerCaseTransformer extends ValueTransformer
   constructor: (transformers, options) ->
 
   transform: (value, row) ->
-    value.toLowerCase()
+    Q(value.toLowerCase())
 
 class RandomTransformer extends ValueTransformer
   @create: (transformers, options) ->
@@ -64,7 +64,7 @@ class RandomTransformer extends ValueTransformer
     rndChars = _.map _.range(@_size), (idx) =>
       @_chars.charAt _.random(0, @_chars.length - 1)
 
-    rndChars.join ''
+    Q(rndChars.join '')
 
 class RegexpTransformer extends ValueTransformer
   @create: (transformers, options) ->
@@ -78,7 +78,7 @@ class RegexpTransformer extends ValueTransformer
     @_replace = options.replace
 
   transform: (value, row) ->
-    value.replace @_find, @_replace
+    Q(value.replace @_find, @_replace)
 
 class LookupTransformer extends ValueTransformer
   @create: (transformers, options) ->
@@ -139,11 +139,11 @@ class LookupTransformer extends ValueTransformer
     found = _.find @_values, (row) -> row[keyIdx] is value
 
     if found
-      found[valueIdx]
+      Q(found[valueIdx])
     else
       fileMessage = if @_file then "File: #{@_file}." else ""
       valuesMessage = @_values.join "; "
-      throw new Error("Unfortunately, lookup transformation failed for value '#{value}'.#{fileMessage} Values: #{valuesMessage}")
+      new Error("Unfortunately, lookup transformation failed for value '#{value}'.#{fileMessage} Values: #{valuesMessage}")
 
 class MultipartStringTransformer extends ValueTransformer
   @create: (transformers, options) ->
@@ -168,7 +168,7 @@ class MultipartStringTransformer extends ValueTransformer
       this
 
   transform: (value, row) ->
-    partialValuePromises = _.map @_parts, (part, idx) =>
+    partialValuePromises = _.map @_parts, (part, idx) ->
       {size, pad, fromCol, valueTransformers} = part
 
       value = row[fromCol]
@@ -187,6 +187,48 @@ class MultipartStringTransformer extends ValueTransformer
     .then (partialValues) ->
       partialValues.join ''
 
+class AdditionalOptionsWrapper
+  constructor: (@_delegate, @_options) ->
+
+  _fullOptions: (options) ->
+    _.extend {}, options, @_options
+
+  create: (transformers, options) ->
+    @_delegate.create(transformers, @_fullOptions(options))
+
+  supports: (options) ->
+    @_delegate.supports(@_fullOptions(options))
+
+# TODO
+#class FallbackTransformer extends ValueTransformer
+#  @create: (transformers, options) ->
+#    Q(new FallbackTransformer(transformers, options))
+#
+#  @supports: (options) ->
+#    options.type is 'fallback'
+#
+#  constructor: (transformers, options) ->
+#    @_transformers = transformers
+#
+#  transform: (value, row) ->
+#    partialValuePromises = _.map @_parts, (part, idx) =>
+#      {size, pad, fromCol, valueTransformers} = part
+#
+#
+#      util.transformValue(valueTransformers, value, row)
+#      .then (transformed) ->
+#          if transformed.length < size and pad
+#            _s.pad(transformed, size, pad)
+#          else if transformed.length is size
+#            transformed
+#          else
+#            valueMessage = if value then " with current value '#{value}'" else ""
+#            throw new Error("Generated column part size (#{transformed.length} - '#{transformed}') is smaller than expected size (#{size}) and no padding is defined for this column. Source column '#{fromCol}' (part #{idx})#{valueMessage}.")
+#
+#    Q.all partialValuePromises
+#    .then (partialValues) ->
+#        partialValues.join ''
+
 module.exports =
   ValueTransformer: ValueTransformer
   ConstantTransformer: ConstantTransformer
@@ -196,6 +238,7 @@ module.exports =
   RegexpTransformer: RegexpTransformer
   LookupTransformer: LookupTransformer
   MultipartStringTransformer: MultipartStringTransformer
+  AdditionalOptionsWrapper: AdditionalOptionsWrapper
   defaultTransformers: [
     ConstantTransformer,
     UpperCaseTransformer,

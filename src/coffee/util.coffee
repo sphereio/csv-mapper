@@ -68,3 +68,15 @@ module.exports =
       Q.all promises
     else
       Q([])
+
+  parseAdditionalOutCsv: (config) ->
+    if not config
+      []
+    else
+      _.map config.split(/,/), (c) ->
+        parts = c.split(/:/)
+
+        if parts.length is 2
+          {group: parts[0], file: parts[1]}
+        else
+          {group: @defaultGroup(), file: parts[0]}

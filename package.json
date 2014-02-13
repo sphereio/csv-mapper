@@ -33,7 +33,8 @@
     "underscore.string": "2.3.3",
     "q": "~1.0.0",
     "q-io": "~1.10.9",
-    "csv": "0.3.7"
+    "csv": "0.3.7",
+    "sphere-node-connect": "0.3.0"
   },
   "devDependencies": {
     "coveralls": "~2.6.1",
