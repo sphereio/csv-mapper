@@ -51,10 +51,12 @@ sphereService = new sphere_transformer.SphereService
 
 sphereSequence = new transformer.AdditionalOptionsWrapper sphere_transformer.SphereSequenceTransformer,
   sphereService: sphereService
+repeatOnDuplicateSku = new transformer.AdditionalOptionsWrapper sphere_transformer.RepeatOnDuplicateSkuTransformer,
+  sphereService: sphereService
 
 new mapping.Mapping
   mappingFile: argv.mapping
-  transformers: transformer.defaultTransformers.concat [sphereSequence]
+  transformers: transformer.defaultTransformers.concat [sphereSequence, repeatOnDuplicateSku]
   columnMappers: mapping.defaultColumnMappers
 .init()
 .then (mapping) ->
