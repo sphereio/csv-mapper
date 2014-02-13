@@ -4,7 +4,7 @@ class Repeater
   constructor: (options) ->
     @_attempts = options.attempts
     @_timeout = options.timeout or 100
-    @_timeoutType = options.timeoutType or 'constant'
+    @_timeoutType = options.timeoutType
 
   execute: (options) ->
     d = Q.defer()
