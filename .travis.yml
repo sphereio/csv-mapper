@@ -6,8 +6,8 @@ before_script:
 - ./create_config.sh
 script:
 - npm test
-- node lib/run.js --projectKey ${SPHERE_PROJECT_KEY} --clientId ${SPHERE_CLIENT_ID}
-  --clientSecret ${SPHERE_CLIENT_SECRET}
+#- node lib/run.js --projectKey ${SPHERE_PROJECT_KEY} --clientId ${SPHERE_CLIENT_ID}
+#  --clientSecret ${SPHERE_CLIENT_SECRET} --mapping test-mapping.js
 notifications:
   hipchat:
     rooms:
