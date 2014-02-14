@@ -1,4 +1,5 @@
 Q = require 'q'
+_ = require('underscore')._
 
 class Repeater
   constructor: (options) ->
@@ -18,18 +19,18 @@ class Repeater
 
     if attempts is 0
       defer.reject new Error("Unsuccessful after #{@_attempts} attempts: #{lastError.message}")
-
-    task()
-    .then (res) ->
-      defer.resolve res
-    .fail (e) =>
-      if recoverableError(e)
-        Q.delay @_calculateDelay(attempts)
-        .then (i) =>
-          @_repeat(attempts - 1, options, defer, e)
-      else
-        defer.reject e
-    .done()
+    else
+      task()
+      .then (res) ->
+        defer.resolve res
+      .fail (e) =>
+        if recoverableError(e)
+          Q.delay @_calculateDelay(attempts)
+          .then (i) =>
+            @_repeat(attempts - 1, options, defer, e)
+        else
+          defer.reject e
+      .done()
 
   _calculateDelay: (attemptsLeft) ->
     if @_timeoutType is 'constant'

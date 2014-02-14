@@ -1,7 +1,7 @@
 Q = require 'q'
 _ = require('underscore')._
 
-TaskQueue = require('../lib/task_queue').TaskQueue
+{TaskQueue} = require('../lib/task_queue')
 
 describe 'TaskQueue', ->
   it 'should execute tasks one after another', (done) ->
