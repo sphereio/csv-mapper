@@ -51,7 +51,7 @@ class RepeatOnDuplicateSkuTransformer extends transformer.ValueTransformer
       this
 
   transform: (value, row) ->
-    @_sphere.repeateOnDuplicateSku
+    @_sphere.repeatOnDuplicateSku
       attempts: @_attempts
       valueFn: () =>
         util.transformValue @_valueTransformers, value, row
@@ -83,7 +83,7 @@ class SphereService
   getAndIncrementCounter: (options) ->
     @_incrementQueue.addTask options
 
-  repeateOnDuplicateSku: (options) ->
+  repeatOnDuplicateSku: (options) ->
     new Repeater
       attempts: options.attempts
       timeout: 0
@@ -181,3 +181,4 @@ module.exports =
   SphereSequenceTransformer: SphereSequenceTransformer
   RepeatOnDuplicateSkuTransformer: RepeatOnDuplicateSkuTransformer
   SphereService: SphereService
+  DuplicateSku: DuplicateSku

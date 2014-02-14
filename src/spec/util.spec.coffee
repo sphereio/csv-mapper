@@ -13,6 +13,12 @@ describe 'util.parseAdditionalOutCsv', ->
       {group: 'group', file: '/file/path'}
     ]
 
+  it 'should use the default group if it not specified', () ->
+    expect(util.parseAdditionalOutCsv("/file/path,/file/path1")).toEqual [
+      {group: util.defaultGroup(), file: '/file/path'}
+      {group: util.defaultGroup(), file: '/file/path1'}
+    ]
+
   it 'should parse multiple elements', () ->
     expect(util.parseAdditionalOutCsv("group1:/file/path1,group2:/file/path2")).toEqual [
       {group: 'group1', file: '/file/path1'}

@@ -73,7 +73,7 @@ module.exports =
     if not config
       []
     else
-      _.map config.split(/,/), (c) ->
+      _.map config.split(/,/), (c) =>
         parts = c.split(/:/)
 
         if parts.length is 2
