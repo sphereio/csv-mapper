@@ -11,9 +11,9 @@ optimist = require('optimist')
 .alias('help', 'h')
 .alias('mapping', 'm')
 .describe('help', 'Shows usage info and exits.')
-.describe('projectKey', 'Sphere.io project key.')
-.describe('clientId', 'Sphere.io HTTP API client id.')
-.describe('clientSecret', 'Sphere.io HTTP API client secret.')
+.describe('projectKey', 'Sphere.io project key (required if you use sphere-specific value transformers).')
+.describe('clientId', 'Sphere.io HTTP API client id (required if you use sphere-specific value transformers).')
+.describe('clientSecret', 'Sphere.io HTTP API client secret (required if you use sphere-specific value transformers).')
 .describe('inCsv', 'The input product CSV file (optional, STDIN would be used if not specified).')
 .describe('outCsv', 'The output product CSV file (optional, STDOUT would be used if not specified).')
 .describe('csvDelimiter', 'CSV delimiter (by default ,).')
@@ -24,7 +24,7 @@ optimist = require('optimist')
 .describe('timeout', 'Set timeout for requests')
 .default('timeout', 300000)
 .default('group', "default")
-.demand(['projectKey', 'clientId', 'clientSecret', 'mapping'])
+.demand(['mapping'])
 
 Mapper = require('../main').Mapper
 transformer = require('../main').transformer
@@ -37,28 +37,37 @@ if (argv.help)
   optimist.showHelp()
   process.exit 0
 
-sphereService = new sphere_transformer.SphereService
-  connector:
-    config:
-      project_key: argv.projectKey
-      client_id: argv.clientId
-      client_secret: argv.clientSecret
-    timeout: argv.timeout
-    user_agent: "#{package_json.name} - #{package_json.version}"
-  repeater:
-    attempts: 5
-    timeout: 100
+additionalTransformers =
+  if argv.projectKey and argv.clientId and argv.clientSecret
+    sphereService = new sphere_transformer.SphereService
+      connector:
+        config:
+          project_key: argv.projectKey
+          client_id: argv.clientId
+          client_secret: argv.clientSecret
+        timeout: argv.timeout
+        user_agent: "#{package_json.name} - #{package_json.version}"
+      repeater:
+        attempts: 5
+        timeout: 100
 
-sphereSequence = new transformer.AdditionalOptionsWrapper sphere_transformer.SphereSequenceTransformer,
-  sphereService: sphereService
-repeatOnDuplicateSku = new transformer.AdditionalOptionsWrapper sphere_transformer.RepeatOnDuplicateSkuTransformer,
-  sphereService: sphereService
+    sphereSequence = new transformer.AdditionalOptionsWrapper sphere_transformer.SphereSequenceTransformer,
+      sphereService: sphereService
+    repeatOnDuplicateSku = new transformer.AdditionalOptionsWrapper sphere_transformer.RepeatOnDuplicateSkuTransformer,
+      sphereService: sphereService
 
-new mapping.Mapping
-  mappingFile: argv.mapping
-  transformers: transformer.defaultTransformers.concat [sphereSequence, repeatOnDuplicateSku]
-  columnMappers: mapping.defaultColumnMappers
-.init()
+    [sphereSequence, repeatOnDuplicateSku]
+  else
+    []
+
+
+util.loadFile argv.mapping
+.then (mappingText) ->
+  new mapping.Mapping
+    mappingConfig: JSON.parse(mappingText)
+    transformers: transformer.defaultTransformers.concat additionalTransformers
+    columnMappers: mapping.defaultColumnMappers
+  .init()
 .then (mapping) ->
   new Mapper
     inCsv: argv.inCsv

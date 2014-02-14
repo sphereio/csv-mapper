@@ -159,20 +159,18 @@ class ColumnTransformer extends ColumnMapping
   Transforms one object into another object accoring to the mapping configuration
 
   Options:
-    mappingFile
+    mappingConfig
     transformers
     columnMappers
 ###
 class Mapping
   constructor: (options) ->
-    @_mappingFile = options.mappingFile
+    @_mappingConfig = options.mappingConfig
     @_transformers = options.transformers
     @_columnMappers = options.columnMappers
 
   init: () ->
-    util.loadFile @_mappingFile
-    .then (contents) =>
-      @_constructMapping(JSON.parse(contents))
+    @_constructMapping(@_mappingConfig)
     .then (mapping) =>
       @_columnMapping = mapping
       this
