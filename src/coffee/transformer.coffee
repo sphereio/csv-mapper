@@ -116,7 +116,7 @@ class LookupTransformer extends ValueTransformer
       @_headers = options.values.shift()
       @_values = options.values
 
-  _init: () ->
+  _init: ->
     if (util.nonEmpty @_file)
       util.loadFile @_file
       .then (contents) =>
@@ -173,7 +173,7 @@ class MultipartStringTransformer extends ValueTransformer
     @_transformers = transformers
     @_parts = _.clone options.parts
 
-  _init: () ->
+  _init: ->
     promises = _.map @_parts, (part) =>
       util.initValueTransformers @_transformers, part.valueTransformers
       .then (vt) ->

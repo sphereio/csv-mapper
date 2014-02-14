@@ -9,6 +9,7 @@ coverage
 config.js
 
 test.sh
+test1.sh
 
 # idea stuff
 .idea

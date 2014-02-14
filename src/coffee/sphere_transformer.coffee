@@ -44,7 +44,7 @@ class RepeatOnDuplicateSkuTransformer extends transformer.ValueTransformer
     @_attempts = options.attempts
     @_valueTransformersConfig = options.valueTransformers
 
-  _init: () ->
+  _init: ->
     util.initValueTransformers @_transformers, @_valueTransformersConfig
     .then (vt) =>
       @_valueTransformers = vt

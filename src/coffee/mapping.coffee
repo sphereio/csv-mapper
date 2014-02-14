@@ -18,9 +18,9 @@ class ColumnMapping
 
   map: (origRow, accRow) -> util.abstractMethod() # mapped row promice
   transformHeader: (headerAccumulator, originalHeader) -> util.abstractMethod() # array of string with the new updated header
-  _defaultPriority: () -> util.abstractMethod() # int
+  _defaultPriority: -> util.abstractMethod() # int
 
-  priority: () ->
+  priority: ->
     @_priority or @_defaultPriority()
 
   supportsGroup: (group) ->
@@ -75,7 +75,7 @@ class CopyFromOriginalTransformer extends ColumnMapping
       else
         acc
 
-  _defaultPriority: () -> 1000
+  _defaultPriority: -> 1000
 
 class RemoveColumnsTransformer extends ColumnMapping
   @create: (transformers, options) ->
@@ -105,7 +105,7 @@ class RemoveColumnsTransformer extends ColumnMapping
       else
         acc
 
-  _defaultPriority: () -> 1500
+  _defaultPriority: -> 1500
 
 class ColumnTransformer extends ColumnMapping
   @create: (transformers, options) ->
@@ -122,7 +122,7 @@ class ColumnTransformer extends ColumnMapping
     @_type = options.type
     @_valueTransformersConfig = options.valueTransformers
 
-  _init: () ->
+  _init: ->
     util.initValueTransformers @_transformers, @_valueTransformersConfig
     .then (vt) =>
       @_valueTransformers = vt
@@ -152,7 +152,7 @@ class ColumnTransformer extends ColumnMapping
       else
         acc
 
-  _defaultPriority: () ->
+  _defaultPriority: ->
     if @_type is 'addColumn' then 3000 else 2000
 
 ###
@@ -169,7 +169,7 @@ class Mapping
     @_transformers = options.transformers
     @_columnMappers = options.columnMappers
 
-  init: () ->
+  init: ->
     @_constructMapping(@_mappingConfig)
     .then (mapping) =>
       @_columnMapping = mapping

@@ -104,7 +104,7 @@ class Mapper
 
     d.promise
 
-  _cvsOptions: () ->
+  _cvsOptions: ->
     delimiter: @_csvDelimiter
     quote: @_csvQuote
 
@@ -124,7 +124,7 @@ class Mapper
       stream = fs.createWriteStream(csvDef.file)
       writer = csv().to.stream(stream, @_cvsOptions())
 
-      closeWriterFn = () ->
+      closeWriterFn = ->
         d = Q.defer()
 
         writer
@@ -134,9 +134,9 @@ class Mapper
 
         d.promise
 
-      closeFn = () ->
+      closeFn = ->
         closeWriterFn()
-        .finally () ->
+        .finally ->
           util.closeStream(stream)
 
       {group: csvDef.group, writer: writer, close: closeFn}
@@ -147,7 +147,7 @@ class Mapper
 
       # strange, but error propagation does not wotk if the return value of the `finally` is returned
       @processCsv(csvIn, csvOut, additionalWriters)
-      .finally () =>
+      .finally =>
         promises = _.map additionalWriters, (writer) -> writer.close()
         promises.push(util.closeStream(csvOut)) if util.nonEmpty @_outCsv
 

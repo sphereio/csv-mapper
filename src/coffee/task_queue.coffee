@@ -14,7 +14,7 @@ class TaskQueue
 
     d.promise
 
-  _maybeExecute: () ->
+  _maybeExecute: ->
     if not @_active and @_queue.length > 0
       @_startTask @_queue.pop()
     else
@@ -22,16 +22,13 @@ class TaskQueue
   _startTask: (taskOptions) ->
     @_active = true
 
-    p = @_taskFn taskOptions.options
+    @_taskFn taskOptions.options
     .then (res) ->
       taskOptions.defer.resolve res
     .fail (error) ->
       taskOptions.defer.reject error
-
-    p.finally () =>
+    .finally =>
       @_active = false
       @_maybeExecute()
-
-    p
 
 exports.TaskQueue = TaskQueue

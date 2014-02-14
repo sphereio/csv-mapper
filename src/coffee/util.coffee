@@ -35,7 +35,7 @@ module.exports =
 
     stream.end()
 
-    stream.on 'finish', () -> d.resolve()
+    stream.on 'finish', -> d.resolve()
     stream.on 'error', (e)-> d.reject(e)
 
     d.promise
@@ -43,13 +43,13 @@ module.exports =
   nonEmpty: (str) ->
     str and _s.trim(str).length > 0
 
-  abstractMethod: () ->
+  abstractMethod: ->
     throw new Error('Method not implemented!')
 
-  notImplementedYet: () ->
+  notImplementedYet: ->
     throw new Error('Method not implemented!')
 
-  defaultGroup: () -> "default"
+  defaultGroup: -> "default"
 
   transformValue: (valueTransformers, value, row) ->
     safeValue = if @nonEmpty(value) then value else ''
