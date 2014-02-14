@@ -25,6 +25,20 @@ class ConstantTransformer extends ValueTransformer
   transform: (value, row) ->
     Q(@_value)
 
+class PrintTransformer extends ValueTransformer
+  @create: (transformers, options) ->
+    Q(new PrintTransformer(transformers, options))
+
+  @supports: (options) ->
+    options.type is 'print'
+
+  constructor: (transformers, options) ->
+    @_value = options.value
+
+  transform: (value, row) ->
+    console.info value
+    Q(value)
+
 class UpperCaseTransformer extends ValueTransformer
   @create: (transformers, options) ->
     Q(new UpperCaseTransformer(transformers, options))
@@ -78,7 +92,10 @@ class RegexpTransformer extends ValueTransformer
     @_replace = options.replace
 
   transform: (value, row) ->
-    Q(value.replace @_find, @_replace)
+    if value.match @_find
+      Q(value.replace @_find, @_replace)
+    else
+      Q.reject(new Error("Regex #{@_find} does not match value '#{value}'."))
 
 class LookupTransformer extends ValueTransformer
   @create: (transformers, options) ->
@@ -141,9 +158,9 @@ class LookupTransformer extends ValueTransformer
     if found
       Q(found[valueIdx])
     else
-      fileMessage = if @_file then "File: #{@_file}." else ""
+      fileMessage = if @_file then " File: #{@_file}." else ""
       valuesMessage = @_values.join "; "
-      new Error("Unfortunately, lookup transformation failed for value '#{value}'.#{fileMessage} Values: #{valuesMessage}")
+      new Error("Lookup transformation failed for value '#{value}'.#{fileMessage} Values: #{valuesMessage}")
 
 class MultipartStringTransformer extends ValueTransformer
   @create: (transformers, options) ->
@@ -232,6 +249,7 @@ class AdditionalOptionsWrapper
 module.exports =
   ValueTransformer: ValueTransformer
   ConstantTransformer: ConstantTransformer
+  PrintTransformer: PrintTransformer
   UpperCaseTransformer: UpperCaseTransformer
   LowerCaseTransformer: LowerCaseTransformer
   RandomTransformer: RandomTransformer
@@ -241,6 +259,7 @@ module.exports =
   AdditionalOptionsWrapper: AdditionalOptionsWrapper
   defaultTransformers: [
     ConstantTransformer,
+    PrintTransformer,
     UpperCaseTransformer,
     LowerCaseTransformer,
     RandomTransformer,

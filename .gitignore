@@ -9,7 +9,6 @@ coverage
 config.js
 
 test.sh
-test-data
 
 # idea stuff
 .idea

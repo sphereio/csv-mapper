@@ -146,13 +146,12 @@ class Mapper
       additionalWriters = @_createAdditionalWriters @_additionalOutCsv
 
       # strange, but error propagation does not wotk if the return value of the `finally` is returned
-      p = @processCsv(csvIn, csvOut, additionalWriters)
-      p.finally () =>
+      @processCsv(csvIn, csvOut, additionalWriters)
+      .finally () =>
         promises = _.map additionalWriters, (writer) -> writer.close()
         promises.push(util.closeStream(csvOut)) if util.nonEmpty @_outCsv
 
         Q.all promises
-      p
 
 
 

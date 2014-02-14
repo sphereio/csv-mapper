@@ -32,6 +32,7 @@ sphere_transformer = require('../main').sphere_transformer
 mapping = require('../main').mapping
 
 argv = optimist.argv
+startTime = new Date().getTime()
 
 if (argv.help)
   optimist.showHelp()
@@ -79,7 +80,8 @@ util.loadFile argv.mapping
     additionalOutCsv: util.parseAdditionalOutCsv(argv.additionalOutCsv)
   .run()
 .then (count) ->
-  console.info "\n\nProcessed #{count} lines"
+  endTime = new Date().getTime()
+  console.error "\n\nProcessed #{count} lines in #{endTime - startTime} ms."
   process.exit 0
 .fail (error) ->
   console.error error.stack

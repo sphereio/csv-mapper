@@ -21,7 +21,7 @@ class ColumnMapping
   _defaultPriority: () -> util.abstractMethod() # int
 
   priority: () ->
-    @_priority or @_defaultPriority
+    @_priority or @_defaultPriority()
 
   supportsGroup: (group) ->
     _.contains @_groups, group
@@ -132,7 +132,7 @@ class ColumnTransformer extends ColumnMapping
     value = @_getPropertyForGroup origRow, accRow, @_fromCol
 
     if @_containsSupportedGroup(accRow)
-      mergedRow = _.reduce _.map(accRow, (acc) -> acc.row), ((acc, obj) ->_.extend(acc, obj)), {}
+      mergedRow = _.reduce _.map(accRow, (acc) -> acc.row), ((acc, obj) ->_.extend(acc, obj)), origRow
 
       util.transformValue(@_valueTransformers, value, mergedRow)
       .then (finalValue) =>
@@ -191,7 +191,6 @@ class Mapping
 
   transformRow: (groups, row) ->
     mappingsSorted = _.sortBy @_columnMapping, (mapping) -> mapping.priority()
-
     _.reduce mappingsSorted, ((accRowPromise, mapping) -> accRowPromise.then((accRow) -> mapping.map(row, accRow))), Q(_.map(groups, (g) -> {group: g, row: []}))
 
 module.exports =
