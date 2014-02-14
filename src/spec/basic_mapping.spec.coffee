@@ -9,7 +9,7 @@ transformer = require('../main').transformer
 Mapper = require('../main').Mapper
 
 describe 'Mapping', ->
-  createTestMapping = (testDir, mappingFile, mapperOptions) ->
+  createTestMapper = (testDir, mappingFile, mapperOptions) ->
     util.loadFile mappingFile
     .then (mappingText) ->
       new mapping.Mapping
@@ -32,7 +32,7 @@ describe 'Mapping', ->
 
   it 'should map CSV file with standard mappings and produce 2 output CSV for "default" and "additional" groups', (done) ->
     withTestDir (testDir)->
-      createTestMapping testDir, 'test-data/test-mapping.json',
+      createTestMapper testDir, 'test-data/test-mapping.json',
         inCsv: 'test-data/test-small.csv'
         outCsv: "#{testDir}/test-small.actual.csv"
         group: 'default'
@@ -40,20 +40,39 @@ describe 'Mapping', ->
       .then (count) ->
         expect(count).toBe 101
 
-        mainPromise = util.loadFile('test-data/test-small.expected.csv')
-        .then (expectedMainOut) ->
-          util.loadFile("#{testDir}/test-small.actual.csv")
-          .then (actualMainOut) ->
-            expect(actualMainOut.toString()).toBe expectedMainOut.toString()
 
-        additionalPromise = util.loadFile('test-data/test-small-additional.expected.csv')
-        .then (expectedAdditionalOut) ->
+        Q.all [
+          util.loadFile('test-data/test-small.expected.csv'),
+          util.loadFile("#{testDir}/test-small.actual.csv"),
+          util.loadFile('test-data/test-small-additional.expected.csv'),
           util.loadFile("#{testDir}/test-small-additional.actual.csv")
-          .then (actualAdditionalOut) ->
-            expect(actualAdditionalOut.toString()).toBe expectedAdditionalOut.toString()
-
-        Q.all [mainPromise, additionalPromise]
+        ]
+        .spread (expectedMainOut, actualMainOut, expectedAdditionalOut, actualAdditionalOut) ->
+          expect(actualMainOut.toString()).toBe expectedMainOut.toString()
+          expect(actualAdditionalOut.toString()).toBe expectedAdditionalOut.toString()
     .then ->
       done()
     .fail (error) ->
       done(error)
+
+  it "should show nice message when regex VT does not match the object", (done) ->
+    new mapping.Mapping
+      transformers: transformer.defaultTransformers
+      columnMappers: mapping.defaultColumnMappers
+      mappingConfig:
+        columnMapping: [{
+          type: "transformColumn"
+          fromCol: "a"
+          toCol: "b"
+          valueTransformers: [
+            {type: "regexp", find: "\\d{10}", replace: "foo"}
+          ]
+        }]
+    .init()
+    .then (mapping) ->
+      mapping.transformRow ["default"], {a: "Hello World!"}
+    .then (result) ->
+      done("No error message!")
+    .fail (error) ->
+      expect(error.message).toEqual "Error during mapping from column 'a' to column 'b' with current value 'Hello World!': Regex /\\d{10}/g does not match value 'Hello World!'."
+      done()
