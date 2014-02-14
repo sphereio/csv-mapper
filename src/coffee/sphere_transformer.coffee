@@ -96,7 +96,7 @@ class SphereService
     projectionQuery = """masterVariant(sku="#{sku}") or variants(sku="#{sku}")"""
     query = "masterData(current(#{projectionQuery}) or staged(#{projectionQuery}))"
 
-    @_get "/products?where=#{encodeURIComponent query}"
+    @_get "/products?limit=1&where=#{encodeURIComponent query}"
     .then (json) ->
       if json.total > 0
         throw new DuplicateSku(sku)
