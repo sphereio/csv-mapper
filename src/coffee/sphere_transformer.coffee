@@ -71,6 +71,40 @@ class DuplicateSku extends Error
     @name = 'DuplicateSku'
     Error.captureStackTrace this, this
 
+class OfflineSphereService
+  constructor: (options) ->
+    @_counters = []
+
+  getAndIncrementCounter: (options) ->
+    counter = _.find @_counters, (c) -> c.name is options.name
+
+    if not counter
+      counter = _.clone options
+      counter.currentValue = counter.initial
+      @_counters.push counter
+
+    counter.currentValue = @_nexCounterValue counter
+
+    Q(counter.currentValue)
+
+  _nexCounterValue: (config) ->
+    newVal = config.currentValue + config.increment
+
+    if (newVal > config.max or newVal < config.min) and not config.rotate
+      throw new Error("Sequence '#{config.name}' is exhausted! #{JSON.stringify config}")
+    else if newVal > config.max
+      min
+    else if newVal < config.min
+      max
+    else
+      newVal
+
+  repeatOnDuplicateSku: (options) ->
+    options.valueFn()
+
+  checkUniqueSku: (sku) ->
+    Q(sku)
+
 class SphereService
   constructor: (options) ->
     @_sequenceNamespace = "sequence"
@@ -181,4 +215,5 @@ module.exports =
   SphereSequenceTransformer: SphereSequenceTransformer
   RepeatOnDuplicateSkuTransformer: RepeatOnDuplicateSkuTransformer
   SphereService: SphereService
+  OfflineSphereService: OfflineSphereService
   DuplicateSku: DuplicateSku

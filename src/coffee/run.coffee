@@ -4,12 +4,13 @@ util = require '../lib/util'
 package_json = require '../package.json'
 
 optimist = require('optimist')
-.usage('Usage: $0 --projectKey [key] --clientId [id] --clientSecret [secret]')
+.usage('Usage: $0 --mapping [mapping.json]')
 .alias('projectKey', 'k')
 .alias('clientId', 'i')
 .alias('clientSecret', 's')
 .alias('help', 'h')
 .alias('mapping', 'm')
+.alias('dryRun', 'd')
 .describe('help', 'Shows usage info and exits.')
 .describe('projectKey', 'Sphere.io project key (required if you use sphere-specific value transformers).')
 .describe('clientId', 'Sphere.io HTTP API client id (required if you use sphere-specific value transformers).')
@@ -22,8 +23,10 @@ optimist = require('optimist')
 .describe('group', "The column group that should be used.")
 .describe('additionalOutCsv', 'Addition output CSV files separated by comma `,` and optionally prefixed with `groupName:`.')
 .describe('timeout', 'Set timeout for requests')
+.describe('dryRun', 'No external side-effects would be performed (also sphere services would generate mocked values)')
 .default('timeout', 300000)
 .default('group', "default")
+.default('dryRun', false)
 .demand(['mapping'])
 
 Mapper = require('../main').Mapper
@@ -40,17 +43,21 @@ if (argv.help)
 
 additionalTransformers =
   if argv.projectKey and argv.clientId and argv.clientSecret
-    sphereService = new sphere_transformer.SphereService
-      connector:
-        config:
-          project_key: argv.projectKey
-          client_id: argv.clientId
-          client_secret: argv.clientSecret
-        timeout: argv.timeout
-        user_agent: "#{package_json.name} - #{package_json.version}"
-      repeater:
-        attempts: 5
-        timeout: 100
+    sphereService =
+      if argv.dryRun
+        new sphere_transformer.OfflineSphereService
+      else
+        new sphere_transformer.SphereService
+          connector:
+            config:
+              project_key: argv.projectKey
+              client_id: argv.clientId
+              client_secret: argv.clientSecret
+            timeout: argv.timeout
+            user_agent: "#{package_json.name} - #{package_json.version}"
+          repeater:
+            attempts: 5
+            timeout: 100
 
     sphereSequence = new transformer.AdditionalOptionsWrapper sphere_transformer.SphereSequenceTransformer,
       sphereService: sphereService
