@@ -33,7 +33,12 @@ class ColumnMapping
     if found
       found.row[name]
     else
-      origRow[name]
+      virtualRow = _.find accRow, (acc) -> acc.group is util.virtualGroup()
+
+      if virtualRow and virtualRow.row[name]
+        virtualRow.row[name]
+      else
+        origRow[name]
 
   _updatePropertyInGroups: (accRow, name, value) ->
     _.each accRow, (acc) =>
@@ -191,7 +196,8 @@ class Mapping
 
   transformRow: (groups, row) ->
     mappingsSorted = _.sortBy @_columnMapping, (mapping) -> mapping.priority()
-    _.reduce mappingsSorted, ((accRowPromise, mapping) -> accRowPromise.then((accRow) -> mapping.map(row, accRow))), Q(_.map(groups, (g) -> {group: g, row: []}))
+    initialAcc = _.map(groups, (g) -> {group: g, row: []}).concat {group: util.virtualGroup(), row: []}
+    _.reduce mappingsSorted, ((accRowPromise, mapping) -> accRowPromise.then((accRow) -> mapping.map(row, accRow))), Q(initialAcc)
 
 module.exports =
   ColumnMapping: ColumnMapping

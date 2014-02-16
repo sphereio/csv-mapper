@@ -13,6 +13,21 @@
         {"type": "random", "size": 10, "chars": "c"}
       ]
     }, {
+      "type": "addColumn",
+      "toCol": "test-value",
+      "priority": 1000,
+      "groups": ["virtual"],
+      "valueTransformers": [
+        {"type": "constant", "value": "Test Value"}
+      ]
+    }, {
+      "type": "transformColumn",
+      "fromCol": "test-value",
+      "toCol": "Virtual Test",
+      "valueTransformers": [
+          {"type": "regexp", "find": "^\\w+(.*)", "replace": "Replaced$1"}
+      ]
+    }, {
       "type": "transformColumn",
       "fromCol": "first",
       "toCol": "First Lower",
@@ -76,6 +91,12 @@
           "pad": "0",
           "valueTransformers": [
             {"type": "random", "size": 6, "chars": "F"}
+          ]
+        }, {
+          "size": 20,
+          "pad": "X",
+          "valueTransformers": [
+            {"type": "column", "col": "test-value"}
           ]
         }]
       }]

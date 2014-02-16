@@ -51,6 +51,8 @@ module.exports =
 
   defaultGroup: -> "default"
 
+  virtualGroup: -> "virtual"
+
   withSafeValue: (value, fn) ->
     if @nonEmpty(value) then fn(value) else Q(value)
 

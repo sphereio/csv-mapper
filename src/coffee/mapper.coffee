@@ -37,6 +37,9 @@ class Mapper
     @_group = options.group or util.defaultGroup()
     @_additionalOutCsv = options.additionalOutCsv
 
+    if @_group is util.virtualGroup() or _.find(@_additionalOutCsv, (c) -> c.group is util.virtualGroup())
+      throw new Error("You are not allowed to use vitual group for CSV creation. It's meant to be used within mapping itself.")
+
   processCsv: (csvIn, csvOut, additionalWriters) ->
     d = Q.defer()
 
