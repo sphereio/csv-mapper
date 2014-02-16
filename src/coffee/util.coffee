@@ -51,9 +51,22 @@ module.exports =
 
   defaultGroup: -> "default"
 
+  withSafeValue: (value, fn) ->
+    if @nonEmpty(value) then fn(value) else Q(value)
+
   transformValue: (valueTransformers, value, row) ->
-    safeValue = if @nonEmpty(value) then value else ''
-    _.reduce valueTransformers, ((acc, transformer) -> acc.then((v) -> transformer.transform(v, row))), Q(safeValue)
+    _.reduce valueTransformers, ((acc, transformer) -> acc.then((v) -> transformer.transform(v, row))), Q(value)
+
+  transformFirstValue: (valueTransformers, value, row) ->
+    if valueTransformers.length is 0
+      value
+    else
+      _.head(valueTransformers).transform value, row
+      .then (newVal) =>
+        if newVal
+          newVal
+        else
+          @transformFirstValue _.tail(valueTransformers), newVal, row
 
   initValueTransformers: (transformers, transformerConfig) ->
     if transformerConfig

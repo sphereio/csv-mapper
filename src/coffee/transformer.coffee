@@ -39,6 +39,34 @@ class PrintTransformer extends ValueTransformer
     console.info value
     Q(value)
 
+class ColumnTransformer extends ValueTransformer
+  @create: (transformers, options) ->
+    Q(new ColumnTransformer(transformers, options))
+
+  @supports: (options) ->
+    options.type is 'column'
+
+  constructor: (transformers, options) ->
+    @_col = options.col
+
+  transform: (value, row) ->
+    Q(row[@_col])
+
+class RequiredTransformer extends ValueTransformer
+  @create: (transformers, options) ->
+    Q(new RequiredTransformer(transformers, options))
+
+  @supports: (options) ->
+    options.type is 'required'
+
+  constructor: (transformers, options) ->
+
+  transform: (value, row) ->
+    if util.nonEmpty(value)
+      Q(value)
+    else
+      Q.reject new Error("Value is empty.")
+
 class UpperCaseTransformer extends ValueTransformer
   @create: (transformers, options) ->
     Q(new UpperCaseTransformer(transformers, options))
@@ -49,7 +77,8 @@ class UpperCaseTransformer extends ValueTransformer
   constructor: (transformers, options) ->
 
   transform: (value, row) ->
-    Q(value.toUpperCase())
+    util.withSafeValue value, (safe) ->
+      Q(safe.toUpperCase())
 
 class LowerCaseTransformer extends ValueTransformer
   @create: (transformers, options) ->
@@ -61,7 +90,8 @@ class LowerCaseTransformer extends ValueTransformer
   constructor: (transformers, options) ->
 
   transform: (value, row) ->
-    Q(value.toLowerCase())
+    util.withSafeValue value, (safe) ->
+      Q(safe.toLowerCase())
 
 class RandomTransformer extends ValueTransformer
   @create: (transformers, options) ->
@@ -92,10 +122,11 @@ class RegexpTransformer extends ValueTransformer
     @_replace = options.replace
 
   transform: (value, row) ->
-    if value.match @_find
-      Q(value.replace @_find, @_replace)
-    else
-      Q.reject(new Error("Regex #{@_find} does not match value '#{value}'."))
+    util.withSafeValue value, (safe) =>
+      if safe.match @_find
+        Q(safe.replace @_find, @_replace)
+      else
+        Q.reject(new Error("Regex #{@_find} does not match value '#{safe}'."))
 
 class LookupTransformer extends ValueTransformer
   @create: (transformers, options) ->
@@ -147,20 +178,21 @@ class LookupTransformer extends ValueTransformer
     d.promise
 
   transform: (value, row) ->
-    keyIdx = if _.isString @_keyCol then @_headers.indexOf(@_keyCol) else @_keyCol
-    valueIdx = if _.isString @_valueCol then @_headers.indexOf(@_valueCol) else @_valueCol
+    util.withSafeValue value, (safe) =>
+      keyIdx = if _.isString @_keyCol then @_headers.indexOf(@_keyCol) else @_keyCol
+      valueIdx = if _.isString @_valueCol then @_headers.indexOf(@_valueCol) else @_valueCol
 
-    if keyIdx < 0 or valueIdx < 0
-      throw new Error("Something is wrong in lookup config: key '#{@_keyCol}' or value '#{@_valueCol}' column not found by name!.")
+      if keyIdx < 0 or valueIdx < 0
+        throw new Error("Something is wrong in lookup config: key '#{@_keyCol}' or value '#{@_valueCol}' column not found by name!.")
 
-    found = _.find @_values, (row) -> row[keyIdx] is value
+      found = _.find @_values, (row) -> row[keyIdx] is safe
 
-    if found
-      Q(found[valueIdx])
-    else
-      fileMessage = if @_file then " File: #{@_file}." else ""
-      valuesMessage = @_values.join "; "
-      new Error("Lookup transformation failed for value '#{value}'.#{fileMessage} Values: #{valuesMessage}")
+      if found
+        Q(found[valueIdx])
+      else
+        fileMessage = if @_file then " File: #{@_file}." else ""
+        valuesMessage = @_values.join "; "
+        new Error("Lookup transformation failed for value '#{safe}'.#{fileMessage} Values: #{valuesMessage}")
 
 class MultipartStringTransformer extends ValueTransformer
   @create: (transformers, options) ->
@@ -204,6 +236,26 @@ class MultipartStringTransformer extends ValueTransformer
     .then (partialValues) ->
       partialValues.join ''
 
+class FallbackTransformer extends ValueTransformer
+  @create: (transformers, options) ->
+    (new FallbackTransformer(transformers, options))._init()
+
+  @supports: (options) ->
+    options.type is 'fallback'
+
+  constructor: (transformers, options) ->
+    @_transformers = transformers
+    @_valueTransformersConfig = options.valueTransformers
+
+  _init: ->
+    util.initValueTransformers @_transformers, @_valueTransformersConfig
+    .then (vt) =>
+      @_valueTransformers = vt
+      this
+
+  transform: (value, row) ->
+    util.transformFirstValue(@_valueTransformers, value, row)
+
 class AdditionalOptionsWrapper
   constructor: (@_delegate, @_options) ->
 
@@ -216,40 +268,12 @@ class AdditionalOptionsWrapper
   supports: (options) ->
     @_delegate.supports(@_fullOptions(options))
 
-# TODO
-#class FallbackTransformer extends ValueTransformer
-#  @create: (transformers, options) ->
-#    Q(new FallbackTransformer(transformers, options))
-#
-#  @supports: (options) ->
-#    options.type is 'fallback'
-#
-#  constructor: (transformers, options) ->
-#    @_transformers = transformers
-#
-#  transform: (value, row) ->
-#    partialValuePromises = _.map @_parts, (part, idx) =>
-#      {size, pad, fromCol, valueTransformers} = part
-#
-#
-#      util.transformValue(valueTransformers, value, row)
-#      .then (transformed) ->
-#          if transformed.length < size and pad
-#            _s.pad(transformed, size, pad)
-#          else if transformed.length is size
-#            transformed
-#          else
-#            valueMessage = if value then " with current value '#{value}'" else ""
-#            throw new Error("Generated column part size (#{transformed.length} - '#{transformed}') is smaller than expected size (#{size}) and no padding is defined for this column. Source column '#{fromCol}' (part #{idx})#{valueMessage}.")
-#
-#    Q.all partialValuePromises
-#    .then (partialValues) ->
-#        partialValues.join ''
-
 module.exports =
   ValueTransformer: ValueTransformer
   ConstantTransformer: ConstantTransformer
   PrintTransformer: PrintTransformer
+  ColumnTransformer: ColumnTransformer
+  RequiredTransformer: RequiredTransformer
   UpperCaseTransformer: UpperCaseTransformer
   LowerCaseTransformer: LowerCaseTransformer
   RandomTransformer: RandomTransformer
@@ -257,13 +281,17 @@ module.exports =
   LookupTransformer: LookupTransformer
   MultipartStringTransformer: MultipartStringTransformer
   AdditionalOptionsWrapper: AdditionalOptionsWrapper
+  FallbackTransformer: FallbackTransformer
   defaultTransformers: [
     ConstantTransformer,
     PrintTransformer,
+    ColumnTransformer,
+    RequiredTransformer,
     UpperCaseTransformer,
     LowerCaseTransformer,
     RandomTransformer,
     RegexpTransformer,
     LookupTransformer,
-    MultipartStringTransformer
+    MultipartStringTransformer,
+    FallbackTransformer
   ]

@@ -32,6 +32,73 @@ describe 'Transformers', ->
         done(error)
       .done()
 
+  describe 'ColumnTransformer', ->
+    it 'should return the value of specified column', (done) ->
+      transformer.ColumnTransformer.create transformer.defaultTransformers,
+        col: "fooCol"
+      .then (t) ->
+        t.transform 'Hello World!',
+          fooCol: "TestStr"
+      .then (result) ->
+        expect(result).toEqual 'TestStr'
+        done()
+      .fail (error) ->
+        done(error)
+      .done()
+
+  describe 'RequiredTransformer', ->
+    it 'should reject undefined values', (done) ->
+      transformer.RequiredTransformer.create transformer.defaultTransformers, {}
+      .then (t) ->
+        t.transform undefined, {}
+      .then (result) ->
+        done("No error")
+      .fail (error) ->
+        expect(error.message).toEqual 'Value is empty.'
+        done()
+      .done()
+
+    it 'should reject empty values', (done) ->
+      transformer.RequiredTransformer.create transformer.defaultTransformers, {}
+      .then (t) ->
+        t.transform '  ', {}
+      .then (result) ->
+        done("No error")
+      .fail (error) ->
+        expect(error.message).toEqual 'Value is empty.'
+        done()
+      .done()
+
+    it 'should reject undefined values', (done) ->
+      transformer.RequiredTransformer.create transformer.defaultTransformers, {}
+      .then (t) ->
+        t.transform 'foo', {}
+      .then (result) ->
+        expect(result).toEqual 'foo'
+        done()
+      .fail (error) ->
+        done(error)
+      .done()
+
+  describe 'FallbackTransformer', ->
+    it 'should return first non-undefined value', (done) ->
+      transformer.FallbackTransformer.create transformer.defaultTransformers,
+        valueTransformers: [
+          {type: 'column', col: 'foo'}
+          {type: 'column', col: 'bar'}
+          {type: 'column', col: 'baz'}
+        ]
+      .then (t) ->
+        t.transform 'Hello World!',
+          bar: "BarStr"
+          baz: "BazStr"
+      .then (result) ->
+        expect(result).toEqual 'BarStr'
+        done()
+      .fail (error) ->
+        done(error)
+      .done()
+
   describe 'AdditionalOptionsWrapper', ->
     it 'should pass extra options to the delegate', ->
       delegate =
