@@ -146,7 +146,7 @@ class ColumnTransformer extends ColumnMapping
       .fail (error) =>
         fromMessage = if @_fromCol then "mapping from column '#{@_fromCol}' to" else "generation of"
         valueMessage = if value then " with current value '#{value}'" else ""
-        throw new Error("Error during #{fromMessage} column '#{@_toCol}'#{valueMessage}: #{error.message}")
+        throw new Error("Error during #{fromMessage} column '#{@_toCol}'#{valueMessage}: #{error.stack}")
     else
       Q(accRow)
 

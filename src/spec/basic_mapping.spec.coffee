@@ -1,6 +1,7 @@
 Q = require 'q'
 fs = require 'q-io/fs'
-_ = require('underscore')._
+{_} = require('underscore')
+_s = require 'underscore.string'
 
 util = require '../lib/util'
 mapping = require('../main').mapping
@@ -77,8 +78,9 @@ describe 'Mapping', ->
     .then (result) ->
       done("No error message!")
     .fail (error) ->
-      expect(error.message).toEqual "Error during mapping from column 'a' to column 'b' with current value 'Hello World!':
-        Regex /\\d{10}/g does not match value 'Hello World!'."
+      expectedMessage = "Error during mapping from column 'a' to column 'b' with current value 'Hello World!':
+        Error: Regex /\\d{10}/g does not match value 'Hello World!'."
+      expect(_s.startsWith(error.message, expectedMessage)).toBe true
       done()
 
   it "should show nice message when multipart value transformer has part of the wring size", (done) ->
@@ -105,7 +107,8 @@ describe 'Mapping', ->
     .then (result) ->
       done("No error message!")
     .fail (error) ->
-      expect(error.message).toEqual "Error during generation of column 'b': Generated column part size
+      expectedMessage = "Error during generation of column 'b': Error: Generated column part size
         (18 - 'Hello World! - foo') is smaller than expected size (15) and no padding is defined for this column.
         Source column 'a' (part 1) with current value 'Hello World!'."
+      expect(_s.startsWith(error.message, expectedMessage)).toBe true
       done()

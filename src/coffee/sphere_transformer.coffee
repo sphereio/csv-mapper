@@ -6,9 +6,9 @@ _s = require 'underscore.string'
 
 util = require '../lib/util'
 
-Rest = require('sphere-node-connect').Rest
-Repeater = require('../lib/repeater').Repeater
-TaskQueue = require('../lib/task_queue').TaskQueue
+{Rest} = require('sphere-node-connect')
+{Repeater} = require('../lib/repeater')
+{BatchTaskQueue} = require('../lib/task_queue')
 
 class SphereSequenceTransformer extends transformer.ValueTransformer
   @create: (transformers, options) ->
@@ -111,11 +111,10 @@ class SphereService
 
     @_client = new Rest options.connector
     @_repeater = new Repeater options.repeater
-    @_incrementQueue = new TaskQueue
-      taskFn: _.bind(@_doGetAndIncrementCounter, this)
+    @_incrementQueues = []
 
   getAndIncrementCounter: (options) ->
-    @_incrementQueue.addTask options
+    @_getIncrementQueue(options).addTask options
 
   repeatOnDuplicateSku: (options) ->
     new Repeater
@@ -136,6 +135,18 @@ class SphereService
         throw new DuplicateSku(sku)
       else
         sku
+
+  _getIncrementQueue: (options) ->
+    queue = _.find @_incrementQueues, (q) -> q.name is options.name
+
+    if not queue
+      queue = new BatchTaskQueue
+        taskFn: _.bind(@_doGetAndIncrementCounter, this)
+
+      @_incrementQueues.push {name: options.name, queue: queue}
+      queue
+    else
+      queue.queue
 
   _get: (path) ->
     d = Q.defer()
@@ -163,13 +174,17 @@ class SphereService
 
     d.promise
 
-  _incrementCounter: (json) ->
+  _incrementCounter: (json, defers) ->
     val = json.value
-    val.currentValue = @_nexCounterValue val
+    values = _.map defers, (d) =>
+      nextVal = @_nexCounterValue(val)
+      val.currentValue = nextVal
+      nextVal
 
     @_post "/custom-objects", json
     .then (obj) ->
-      val.currentValue
+      _.each defers, (d, idx) -> d.resolve(values[idx])
+      values
 
   _nexCounterValue: (config) ->
     newVal = config.currentValue + config.increment
@@ -196,18 +211,19 @@ class SphereService
         rotate: options.rotate
         currentValue: options.initial
 
-  _doGetAndIncrementCounter: (options) ->
+  _doGetAndIncrementCounter: (tasks) ->
     @_repeater.execute
       recoverableError: (e) -> e instanceof ErrorStatusCode and e.code is 409
       task: () =>
-        @_get "/custom-objects/#{@_sequenceNamespace}/#{options.name}"
+        @_get "/custom-objects/#{@_sequenceNamespace}/#{tasks[0].options.name}"
         .then (json) =>
-          @_incrementCounter(json)
+          @_incrementCounter(json, _.map(tasks, (t) -> t.defer))
         .fail (error) =>
+          consoel.info "err", error
           if error instanceof ErrorStatusCode and error.code is 404
-            @_createSequence(options)
+            @_createSequence(tasks[0].options)
             .then (json) =>
-              @_incrementCounter(json)
+              @_incrementCounter(json, _.map(tasks, (t) -> t.defer))
           else
             throw error
 

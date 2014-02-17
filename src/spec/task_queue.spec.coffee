@@ -1,17 +1,19 @@
 Q = require 'q'
 _ = require('underscore')._
 
-{TaskQueue} = require('../lib/task_queue')
+{BatchTaskQueue} = require('../lib/task_queue')
 
-describe 'TaskQueue', ->
+describe 'BatchTaskQueue', ->
   it 'should execute tasks one after another', (done) ->
     processed = [false, false, false]
 
-    queue = new TaskQueue
-      taskFn: (opts) ->
-        processed[opts.idx] = true
-        _.each processed, (p, idx) ->
-          expect(p).toBe (idx <= opts.idx)
+    queue = new BatchTaskQueue
+      taskFn: (tasks) ->
+        _.each tasks, (t) ->
+          processed[t.options.idx] = true
+          _.each processed, (p, idx) ->
+            expect(p).toBe (idx <= t.options.idx)
+          t.defer.resolve true
         Q(true)
 
     Q.all [queue.addTask({idx: 0}), queue.addTask({idx: 1}), queue.addTask({idx: 2})]
@@ -22,8 +24,8 @@ describe 'TaskQueue', ->
       done(error)
 
   it 'should should bouble up an error', (done) ->
-    queue = new TaskQueue
-      taskFn: (opts) ->
+    queue = new BatchTaskQueue
+      taskFn: (tasks) ->
         Q.reject("foo")
 
     queue.addTask({})

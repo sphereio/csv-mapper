@@ -1,6 +1,7 @@
 Q = require 'q'
+_ = require('underscore')._
 
-class TaskQueue
+class BatchTaskQueue
   constructor: (options) ->
     @_taskFn = options.taskFn
     @_queue = []
@@ -9,26 +10,25 @@ class TaskQueue
   addTask: (taskOptions) ->
     d = Q.defer()
 
-    @_queue.unshift {options: taskOptions, defer: d}
+    @_queue.push {options: taskOptions, defer: d}
     @_maybeExecute()
 
     d.promise
 
   _maybeExecute: ->
     if not @_active and @_queue.length > 0
-      @_startTask @_queue.pop()
+      @_startTasks @_queue
+      @_queue = []
     else
 
-  _startTask: (taskOptions) ->
+  _startTasks: (tasks) ->
     @_active = true
 
-    @_taskFn taskOptions.options
-    .then (res) ->
-      taskOptions.defer.resolve res
+    @_taskFn tasks
     .fail (error) ->
-      taskOptions.defer.reject error
+      _.each tasks, (t) -> t.defer.reject error
     .finally =>
       @_active = false
       @_maybeExecute()
 
-exports.TaskQueue = TaskQueue
+exports.BatchTaskQueue = BatchTaskQueue
