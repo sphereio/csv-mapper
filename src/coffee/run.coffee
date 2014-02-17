@@ -24,9 +24,11 @@ optimist = require('optimist')
 .describe('additionalOutCsv', 'Addition output CSV files separated by comma `,` and optionally prefixed with `groupName:`.')
 .describe('timeout', 'Set timeout for requests')
 .describe('dryRun', 'No external side-effects would be performed (also sphere services would generate mocked values)')
+.describe('attemptsOnConflict', 'Number of attempts to update the project in case of conflict (409 HTTP status)')
 .default('timeout', 300000)
 .default('group', "default")
 .default('dryRun', false)
+.default('attemptsOnConflict', 10)
 .demand(['mapping'])
 
 Mapper = require('../main').Mapper
@@ -56,7 +58,7 @@ additionalTransformers =
             timeout: argv.timeout
             user_agent: "#{package_json.name} - #{package_json.version}"
           repeater:
-            attempts: 5
+            attempts: argv.attemptsOnConflict
             timeout: 100
 
     sphereSequence = new transformer.AdditionalOptionsWrapper sphere_transformer.SphereSequenceTransformer,

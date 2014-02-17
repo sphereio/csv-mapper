@@ -33,7 +33,6 @@ class PrintTransformer extends ValueTransformer
     options.type is 'print'
 
   constructor: (transformers, options) ->
-    @_value = options.value
 
   transform: (value, row) ->
     console.info value

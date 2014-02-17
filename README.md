@@ -43,22 +43,24 @@ Install the module with: `npm install sphere-product-mapper`
     Usage: csv-mapper --mapping [mapping.json]
 
     Options:
-      --help, -h          Shows usage info and exits.
-      --projectKey, -k    Sphere.io project key (required if you use sphere-specific value transformers).
-      --clientId, -i      Sphere.io HTTP API client id (required if you use sphere-specific value transformers).
-      --clientSecret, -s  Sphere.io HTTP API client secret (required if you use sphere-specific value transformers).
-      --inCsv             The input product CSV file (optional, STDIN would be used if not specified).
-      --outCsv            The output product CSV file (optional, STDOUT would be used if not specified).
-      --csvDelimiter      CSV delimiter (by default ,).
-      --csvQuote          CSV quote (by default ").
-      --mapping, -m       Mapping JSON file or URL.                                                                        [required]
-      --group             The column group that should be used.                                                            [string]  [default: "default"]
-      --additionalOutCsv  Addition output CSV files separated by comma `,` and optionally prefixed with `groupName:`.
-      --timeout           Set timeout for requests                                                                         [default: 300000]
-      --dryRun, -d        No external side-effects would be performed (also sphere services would generate mocked values)  [default: false]
+      --help, -h            Shows usage info and exits.
+      --projectKey, -k      Sphere.io project key (required if you use sphere-specific value transformers).
+      --clientId, -i        Sphere.io HTTP API client id (required if you use sphere-specific value transformers).
+      --clientSecret, -s    Sphere.io HTTP API client secret (required if you use sphere-specific value transformers).
+      --inCsv               The input product CSV file (optional, STDIN would be used if not specified).
+      --outCsv              The output product CSV file (optional, STDOUT would be used if not specified).
+      --csvDelimiter        CSV delimiter (by default ,).
+      --csvQuote            CSV quote (by default ").
+      --mapping, -m         Mapping JSON file or URL.                                                                        [required]
+      --group               The column group that should be used.                                                            [string]  [default: "default"]
+      --additionalOutCsv    Addition output CSV files separated by comma `,` and optionally prefixed with `groupName:`.
+      --timeout             Set timeout for requests                                                                         [default: 300000]
+      --dryRun, -d          No external side-effects would be performed (also sphere services would generate mocked values)  [default: false]
+      --attemptsOnConflict  Number of attempts to update the project in case of conflict (409 HTTP status)                   [default: 10]
 
 The only required argument is `mapping` (see below). If you want to use SPHERE.IO specific value transformers in the mapping,
-then you also need to specify `projectKey`, `clientId`, `clientSecret`.
+then you also need to specify `projectKey`, `clientId`, `clientSecret`. Please note, that mapping can be not only a plain file,
+but also a URL.
 
 ### Mapping File
 
@@ -86,23 +88,93 @@ They are used to create/delete columns. You can use column mappings of following
 * **copyFromOriginal** - Copies all columns from the original CSV (default priority: 1000)
   * **includeCols** - Array of strings (Optional) - whitelist for the column names
   * **excludeCols** - Array of strings (Optional) - blacklist for the column names
-  * **priority** - Int - all columns are evaluated according to their priority, columns with lower priority are evaluated earlier (it has nothing to do with the position in the CSV file)
-  * **groups** - Array of strings - to which column groups does this column mapping belongs (more info about groups below)
+  * **priority** - Int (Optional) - all columns are evaluated according to their priority, columns with lower priority are evaluated earlier (it has nothing to do with the position in the CSV file)
+  * **groups** - Array of strings (Optional) - to which column groups does this column mapping belongs (more info about groups below)
 * **removeColumns** - Removes columns (default priority: 1500)
   * **cols** - Array of strings - names of the columns that should be removed from the resulting CSV
-  * **priority** - Int - all columns are evaluated according to their priority, columns with lower priority are evaluated earlier (it has nothing to do with the position in the CSV file)
-  * **groups** - Array of strings - to which column groups does this column mapping belongs (more info about groups below)
+  * **priority** - Int (Optional) - all columns are evaluated according to their priority, columns with lower priority are evaluated earlier (it has nothing to do with the position in the CSV file)
+  * **groups** - Array of strings (Optional) - to which column groups does this column mapping belongs (more info about groups below)
 * **addColumn** - Adds new column (default priority: 3000)
   * **toCol** - String - the name of the column
-  * **valueTransformers** - Array of value transformers - they generate value for this column (see below for the available value transformers)
-  * **priority** - Int - all columns are evaluated according to their priority, columns with lower priority are evaluated earlier (it has nothing to do with the position in the CSV file)
-  * **groups** - Array of strings - to which column groups does this column mapping belongs (more info about groups below)
+  * **valueTransformers** - Array of value transformers (Optional) - they generate value for this column (see below for the available value transformers)
+  * **priority** - Int (Optional) - all columns are evaluated according to their priority, columns with lower priority are evaluated earlier (it has nothing to do with the position in the CSV file)
+  * **groups** - Array of strings (Optional) - to which column groups does this column mapping belongs (more info about groups below)
 * **transformColumn** - Transforms some existing column (default priority: 2000)
   * **fromCol** - String - from which column should initial value be taken (value would be passed to the value transformers)
   * **toCol** - String - the name of the column
-  * **valueTransformers** - Array of value transformers - they generate value for this column (see below for the available value transformers)
-  * **priority** - Int - all columns are evaluated according to their priority, columns with lower priority are evaluated earlier (it has nothing to do with the position in the CSV file)
-  * **groups** - Array of strings - to which column groups does this column mapping belongs (more info about groups below)
+  * **valueTransformers** - Array of value transformers (Optional) - they transform value for this column (see below for the available value transformers)
+  * **priority** - Int (Optional) - all columns are evaluated according to their priority, columns with lower priority are evaluated earlier (it has nothing to do with the position in the CSV file)
+  * **groups** - Array of strings (Optional) - to which column groups does this column mapping belongs (more info about groups below)
+
+#### Value Transformers
+
+Value transformers are used to generate/transform column value.
+The output of one transformer in the list would be passed as input to the next one.
+If input is undefined, all transformers will ignore it and pass it to the next transformer (so if you want to make sure that column has some non-empty value, please use `regexp` value transformer).
+
+Here is the list of standard value transformers:
+
+* **constant** - returns some constant value (ignores input)
+  * **value** - Anything - value to return
+* **print** - returns input value and prints it to the console in the process (useful for the debugging)
+* **column** - returns value of specified column (ignores input)
+  * **col** - String - the name of the column
+* **upper** - transforms input value to upper case
+* **lower** - transforms input value to lower case
+* **random** - generates random output (ignores input)
+  * **size** - Int - the size of the generated string
+  * **chars** - String - the range of characters that should be used in the resulting string
+* **regexp** - searches input string with the help of regular expression and replaces found matches
+  * **find** - String - regular expression to find
+  * **replace** - String - replacement text (you can use placeholders like `$1` to insert groups)
+* **lookup** - a lookup table that will  return matching value based on the input key
+  * **header**  - Boolean - whether lookup CSV contains header
+  * **keyCol** - Int or String - lookup CSV key column name or index
+  * **valueCol** - Int or String - lookup CSV value column name or index
+  * **file** - String (Optional) - lookup CSV location (can be a file path or URL)
+  * **csvDelimiter** - String (Optional)
+  * **csvQuote** - String (Optional)
+  * **values** - Array of Arrays or Strings (Optional) - an alternative to file, that allows to define lookup CSV contents in-place
+* **multipartString** - retuns a string that consists of multiple parts
+  * **parts** - Array of objects - The definitions of the string parts
+    * **size** - Int - the size of the string part (if no padding is specified and resulting string has different size, then mapping would be interrupted with error)
+    * **pad**  - String (Optional) - the padding that is used, if resulting string is too small
+    * **fromCol**  - String (Optional) - the name of the column with initial value for this part
+    * **valueTransformers** - Array of value transformers (Optional) - they transform value for this string part
+
+Here is the list of workflow value transformers:
+
+* **required** - Interrupts mapping process if input value is empty or undefined
+* **fallback** - Evaluates provided value transformers one after another and returns the first non-undefined value
+  * **valueTransformers** - Array of value transformers - the child value transformers that would be used to get first successful value
+
+SPHERE.IO specific value transformers (Please keep in mind, that you need to specify `projectKey`, `clientId`, `clientSecret` arguments, if you want them to be available):
+
+* **sphereSequence** - returns the next project-global counter value
+  * **name** - String - the name of the sequence
+  * **initial** - Int - Initial value for the new sequence
+  * **max** - Int - Maximum value of the sequence
+  * **min** - Int - Minimum value of the sequence
+  * **increment** - Int - Increment step
+  * **rotate** - Boolean - Whether it is allowed to start from the min if sequence reached max (or vice versa for the negative step)
+* **repeatOnDuplicateSku** - Generates new SKU and verifies, that it's unique across the project
+  * **attempts** - Int - The number of attempts before giving up and interruption of the mapping process
+  * **valueTransformers** - Array of value transformers - Value transformers that are used to generate new SKUs
+
+#### Column Groups
+
+Then you define column mappings, you can also provide an array of groups. Then when you are performing actual mapping
+you can provide a set of additional output files. Each additional output file should have the column group name - this
+will define, which columns this file contains. Here is an example:
+
+    csv-mapper --mapping mapping.json --additionalOutCsv a:/path/to/a.csv,b:/path/to/b.csv
+
+in this case `/path/to/a.csv`, for instance, will contain only columns that have group `a`.
+
+There are 2 special group names:
+
+* **default** - always used, if group is not specified
+* **virtual** - columns with this group can be used to create columns that are not written to any file, but used to define other columns
 
 ## Examples
 
