@@ -60,8 +60,56 @@ Install the module with: `npm install sphere-product-mapper`
 The only required argument is `mapping` (see below). If you want to use SPHERE.IO specific value transformers in the mapping,
 then you also need to specify `projectKey`, `clientId`, `clientSecret`.
 
+### Mapping File
+
+Mapping is a json document that has following structure:
+
+    {
+      "description": "Test mapping",
+      "columnMapping": [{
+          "type": "addColumn",
+          "toCol": "constant",
+          "valueTransformers": [
+            {"type": "constant", "value": "Foo"}
+          ]
+        },
+        ...
+      ]
+    }
+
+There are several concepts that you need to be aware of, when you defining a mapping:
+
+#### Columns Mappings
+
+They are used to create/delete columns. You can use column mappings of following types:
+
+* **copyFromOriginal** - Copies all columns from the original CSV (default priority: 1000)
+  * **includeCols** - Array of strings (Optional) - whitelist for the column names
+  * **excludeCols** - Array of strings (Optional) - blacklist for the column names
+  * **priority** - Int - all columns are evaluated according to their priority, columns with lower priority are evaluated earlier (it has nothing to do with the position in the CSV file)
+  * **groups** - Array of strings - to which column groups does this column mapping belongs (more info about groups below)
+* **removeColumns** - Removes columns (default priority: 1500)
+  * **cols** - Array of strings - names of the columns that should be removed from the resulting CSV
+  * **priority** - Int - all columns are evaluated according to their priority, columns with lower priority are evaluated earlier (it has nothing to do with the position in the CSV file)
+  * **groups** - Array of strings - to which column groups does this column mapping belongs (more info about groups below)
+* **addColumn** - Adds new column (default priority: 3000)
+  * **toCol** - String - the name of the column
+  * **valueTransformers** - Array of value transformers - they generate value for this column (see below for the available value transformers)
+  * **priority** - Int - all columns are evaluated according to their priority, columns with lower priority are evaluated earlier (it has nothing to do with the position in the CSV file)
+  * **groups** - Array of strings - to which column groups does this column mapping belongs (more info about groups below)
+* **transformColumn** - Transforms some existing column (default priority: 2000)
+  * **fromCol** - String - from which column should initial value be taken (value would be passed to the value transformers)
+  * **toCol** - String - the name of the column
+  * **valueTransformers** - Array of value transformers - they generate value for this column (see below for the available value transformers)
+  * **priority** - Int - all columns are evaluated according to their priority, columns with lower priority are evaluated earlier (it has nothing to do with the position in the CSV file)
+  * **groups** - Array of strings - to which column groups does this column mapping belongs (more info about groups below)
+
 ## Examples
-_(Coming soon)_
+
+You can find example mapping in [the project itself](https://github.com/sphereio/sphere-product-mapper/blob/master/test-data/test-mapping.json).
+If you are in the project root, you can map an example CSV file like this:
+
+    csv-mapper --mapping test-data/test-mapping.json --inCsv test-data/test-large.csv
 
 ## Tests
 Tests are written using [jasmine](http://pivotal.github.io/jasmine/) (behavior-driven development framework for testing javascript code). Thanks to [jasmine-node](https://github.com/mhevery/jasmine-node), this test framework is also available for node.js.
