@@ -6,3 +6,4 @@ coverage
 .travis.yml
 .coveralls.yml
 *.coffee
+.idea

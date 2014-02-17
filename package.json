@@ -27,6 +27,9 @@
   "scripts": {
     "test": "grunt coverage"
   },
+  "bin" : {
+    "csv-mapper": "bin/csv-mapper.js"
+  },
   "dependencies": {
     "optimist": "0.6.1",
     "underscore": "~1.6.0",

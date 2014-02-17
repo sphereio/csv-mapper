@@ -1,9 +1,8 @@
 # sphere-product-mapper
-============================
 
 [![Build Status](https://travis-ci.org/sphereio/sphere-product-mapper.png?branch=master)](https://travis-ci.org/sphereio/sphere-product-mapper) [![Coverage Status](https://coveralls.io/repos/sphereio/sphere-product-mapper/badge.png?branch=master)](https://coveralls.io/r/sphereio/sphere-product-mapper?branch=master) [![Dependency Status](https://david-dm.org/sphereio/sphere-product-mapper.png?theme=shields.io)](https://david-dm.org/sphereio/sphere-product-mapper) [![devDependency Status](https://david-dm.org/sphereio/sphere-product-mapper/dev-status.png?theme=shields.io)](https://david-dm.org/sphereio/sphere-product-mapper#info=devDependencies)
 
-This app is designed to take products export files and map/restructure them. During this process, original product would be updated with the SKU reference to the new product.
+This app is designed to take input CSV file and map it to output CSV files according to the mapping.
 
 ## Getting Started
 Install the module with: `npm install sphere-product-mapper`
@@ -38,6 +37,30 @@ Install the module with: `npm install sphere-product-mapper`
         ```
 
 ## Documentation
+
+### Usage
+
+    Usage: csv-mapper --mapping [mapping.json]
+
+    Options:
+      --help, -h          Shows usage info and exits.
+      --projectKey, -k    Sphere.io project key (required if you use sphere-specific value transformers).
+      --clientId, -i      Sphere.io HTTP API client id (required if you use sphere-specific value transformers).
+      --clientSecret, -s  Sphere.io HTTP API client secret (required if you use sphere-specific value transformers).
+      --inCsv             The input product CSV file (optional, STDIN would be used if not specified).
+      --outCsv            The output product CSV file (optional, STDOUT would be used if not specified).
+      --csvDelimiter      CSV delimiter (by default ,).
+      --csvQuote          CSV quote (by default ").
+      --mapping, -m       Mapping JSON file or URL.                                                                        [required]
+      --group             The column group that should be used.                                                            [string]  [default: "default"]
+      --additionalOutCsv  Addition output CSV files separated by comma `,` and optionally prefixed with `groupName:`.
+      --timeout           Set timeout for requests                                                                         [default: 300000]
+      --dryRun, -d        No external side-effects would be performed (also sphere services would generate mocked values)  [default: false]
+
+The only required argument is `mapping` (see below). If you want to use SPHERE.IO specific value transformers in the mapping,
+then you also need to specify `projectKey`, `clientId`, `clientSecret`.
+
+## Examples
 _(Coming soon)_
 
 ## Tests
@@ -47,9 +70,6 @@ To run tests, simple execute the *test* task using `grunt`.
 ```bash
 $ grunt test
 ```
-
-## Examples
-_(Coming soon)_
 
 ## Contributing
 In lieu of a formal styleguide, take care to maintain the existing coding style. Add unit tests for any new or changed functionality. Lint and test your code using [Grunt](http://gruntjs.com/).
