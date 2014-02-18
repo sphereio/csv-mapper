@@ -46,6 +46,18 @@ describe 'Transformers', ->
         done(error)
       .done()
 
+  describe 'SlugifyTransformer', ->
+    it 'should slugify the input value', (done) ->
+      transformer.SlugifyTransformer.create transformer.defaultTransformers, {}
+      .then (t) ->
+        t.transform 'Hello World?!', {}
+      .then (result) ->
+        expect(result).toEqual 'hello-world'
+        done()
+      .fail (error) ->
+        done(error)
+      .done()
+
   describe 'RequiredTransformer', ->
     it 'should reject undefined values', (done) ->
       transformer.RequiredTransformer.create transformer.defaultTransformers, {}

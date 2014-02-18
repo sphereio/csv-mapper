@@ -79,7 +79,7 @@ Mapping is a json document that has following structure:
       ]
     }
 
-There are several concepts that you need to be aware of, when you defining a mapping:
+There are several concepts, that you need to be aware of, when you are defining the mapping:
 
 #### Columns Mappings
 
@@ -121,6 +121,7 @@ Here is the list of standard value transformers:
   * **col** - String - the name of the column
 * **upper** - transforms input value to upper case
 * **lower** - transforms input value to lower case
+* **slugify** - returns slugified input value
 * **random** - generates random output (ignores input)
   * **size** - Int - the size of the generated string
   * **chars** - String - the range of characters that should be used in the resulting string

@@ -92,6 +92,19 @@ class LowerCaseTransformer extends ValueTransformer
     util.withSafeValue value, (safe) ->
       Q(safe.toLowerCase())
 
+class SlugifyTransformer extends ValueTransformer
+  @create: (transformers, options) ->
+    Q(new SlugifyTransformer(transformers, options))
+
+  @supports: (options) ->
+    options.type is 'slugify'
+
+  constructor: (transformers, options) ->
+
+  transform: (value, row) ->
+    util.withSafeValue value, (safe) ->
+      Q(_s.slugify(safe))
+
 class RandomTransformer extends ValueTransformer
   @create: (transformers, options) ->
     Q(new RandomTransformer(transformers, options))
@@ -275,6 +288,7 @@ module.exports =
   RequiredTransformer: RequiredTransformer
   UpperCaseTransformer: UpperCaseTransformer
   LowerCaseTransformer: LowerCaseTransformer
+  SlugifyTransformer: SlugifyTransformer
   RandomTransformer: RandomTransformer
   RegexpTransformer: RegexpTransformer
   LookupTransformer: LookupTransformer
@@ -288,6 +302,7 @@ module.exports =
     RequiredTransformer,
     UpperCaseTransformer,
     LowerCaseTransformer,
+    SlugifyTransformer,
     RandomTransformer,
     RegexpTransformer,
     LookupTransformer,
