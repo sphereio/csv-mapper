@@ -219,7 +219,6 @@ class SphereService
         .then (json) =>
           @_incrementCounter(json, _.map(tasks, (t) -> t.defer))
         .fail (error) =>
-          consoel.info "err", error
           if error instanceof ErrorStatusCode and error.code is 404
             @_createSequence(tasks[0].options)
             .then (json) =>
