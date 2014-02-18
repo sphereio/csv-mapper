@@ -236,7 +236,9 @@ class MultipartStringTransformer extends ValueTransformer
 
       util.transformValue(valueTransformers, value, row)
       .then (transformed) ->
-        if transformed.length < size and pad
+        if not size
+          transformed
+        else if transformed.length < size and pad
           _s.pad(transformed, size, pad)
         else if transformed.length is size
           transformed
