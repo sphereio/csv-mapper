@@ -20,7 +20,7 @@ Install the module with: `npm install sphere-product-mapper`
     ```
     ./create_config.sh
     ```
-* configure github/hipchat integration (see project *settings* in guthub)
+* configure github/hipchat integration (see project *settings* in Github)
 * install travis gem `gem install travis`
 * add encrpyted keys to `.travis.yml`
  * add sphere project credentials to `.travis.yml`
