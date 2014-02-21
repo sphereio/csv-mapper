@@ -4,37 +4,34 @@
 
 This app is designed to take input CSV file and map it to output CSV files according to the mapping.
 
-## Getting Started
-Install the module with: `npm install sphere-product-mapper`
+# Setup
 
-## Setup
+* install [NodeJS](http://support.sphere.io/knowledgebase/articles/307722-install-nodejs-and-get-a-component-running) (platform for running application) 
 
-* create `config.js`
-  * make `create_config.sh`executable
+### From scratch
 
-    ```
-    chmod +x create_config.sh
-    ```
-  * run script to generate `config.js`
+* install [npm]((http://gruntjs.com/getting-started)) (NodeJS package manager, bundled with node since version 0.6.3!)
+* install [grunt-cli](http://gruntjs.com/getting-started) (automation tool)
+*  resolve dependencies using `npm`
+```bash
+$ npm install
+```
+* build javascript sources
+```bash
+$ grunt build
+```
 
-    ```
-    ./create_config.sh
-    ```
-* configure github/hipchat integration (see project *settings* in Github)
-* install travis gem `gem install travis`
-* add encrpyted keys to `.travis.yml`
- * add sphere project credentials to `.travis.yml`
+### From ZIP
 
-        ```
-        travis encrypt [xxx] --add SPHERE_PROJECT_KEY
-        travis encrypt [xxx] --add SPHERE_CLIENT_ID
-        travis encrypt [xxx] --add SPHERE_CLIENT_SECRET
-        ```
-  * add hipchat credentials to `.travis.yml`
+* Just download the ready to use application as [ZIP](https://github.com/sphereio/sphere-product-mapper/archive/latest.zip)
+* Extract the latest.zip with `unzip sphere-product-mapper-latest.zip`
+* Change into the directory `cd sphere-product-mapper-latest`
 
-        ```
-        travis encrypt [xxx]@Sphere --add notifications.hipchat.rooms
-        ```
+To make the application globally available in your terminal, please do
+
+```bash
+sudo npm install . -g
+```
 
 ## Documentation
 
