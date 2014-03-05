@@ -66,23 +66,6 @@ describe 'Mapping', ->
     .fail (error) ->
       done(error)
 
-  it "should show nice message when regex value transformer does not match the object", (done) ->
-    simpleMapping {a: "Hello World!"}, [{
-      type: "transformColumn"
-      fromCol: "a"
-      toCol: "b"
-      valueTransformers: [
-        {type: "regexp", find: "\\d{10}", replace: "foo"}
-      ]
-    }]
-    .then (result) ->
-      done("No error message!")
-    .fail (error) ->
-      expectedMessage = "Error during mapping from column 'a' to column 'b' with current value 'Hello World!':
-        Error: Regex /\\d{10}/g does not match value 'Hello World!'."
-      expect(_s.startsWith(error.message, expectedMessage)).toBe true
-      done()
-
   it "should show nice message when multipart value transformer has part of the wring size", (done) ->
     simpleMapping {a: "Hello World!"}, [{
       type: "addColumn"
