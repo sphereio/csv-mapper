@@ -65,10 +65,10 @@ module.exports =
     else
       _.head(valueTransformers).transform value, row
       .then (newVal) =>
-        if newVal
+        if @nonEmpty(newVal)
           newVal
         else
-          @transformFirstValue _.tail(valueTransformers), newVal, row
+          @transformFirstValue _.tail(valueTransformers), value, row
 
   initValueTransformers: (transformers, transformerConfig) ->
     if transformerConfig

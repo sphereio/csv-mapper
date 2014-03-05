@@ -38,6 +38,21 @@ class PrintTransformer extends ValueTransformer
     console.info value
     Q(value)
 
+#class RandomDelayTransformer extends ValueTransformer
+#  @create: (transformers, options) ->
+#    Q(new PrintTransformer(transformers, options))
+#
+#  @supports: (options) ->
+#    options.type is 'randonDelay'
+#
+#  constructor: (transformers, options) ->
+#    @_minMs = options.minMs
+#    @_maxMs = options.minMs
+#
+#  transform: (value, row) ->
+#    console.info value
+#    Q(value)
+
 class ColumnTransformer extends ValueTransformer
   @create: (transformers, options) ->
     Q(new ColumnTransformer(transformers, options))
@@ -138,7 +153,7 @@ class RegexpTransformer extends ValueTransformer
       if safe.match @_find
         Q(safe.replace @_find, @_replace)
       else
-        Q.reject(new Error("Regex #{@_find} does not match value '#{safe}'."))
+        Q(null)
 
 class LookupTransformer extends ValueTransformer
   @create: (transformers, options) ->
