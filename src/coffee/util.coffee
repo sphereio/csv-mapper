@@ -33,10 +33,10 @@ module.exports =
   closeStream: (stream) ->
     d = Q.defer()
 
-    stream.end()
-
     stream.on 'finish', -> d.resolve()
-    stream.on 'error', (e)-> d.reject(e)
+    stream.on 'error', (e) -> d.reject(e)
+
+    stream.end()
 
     d.promise
 
