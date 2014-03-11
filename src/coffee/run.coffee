@@ -25,6 +25,7 @@ optimist = require('optimist')
 .describe('timeout', 'Set timeout for requests')
 .describe('dryRun', 'No external side-effects would be performed (also sphere services would generate mocked values)')
 .describe('attemptsOnConflict', 'Number of attempts to update the project in case of conflict (409 HTTP status)')
+.describe('disableAsserts', 'disable asserts (e.g.: required)')
 .default('timeout', 300000)
 .default('group', "default")
 .default('dryRun', false)
@@ -70,12 +71,19 @@ additionalTransformers =
   else
     []
 
+required =
+  if argv.disableAsserts
+    new transformer.AdditionalOptionsWrapper transformer.RequiredTransformer,
+      disable: true
+  else
+    transformer.RequiredTransformer
+
 
 util.loadFile argv.mapping
 .then (mappingText) ->
   new mapping.Mapping
     mappingConfig: JSON.parse(mappingText)
-    transformers: transformer.defaultTransformers.concat additionalTransformers
+    transformers: transformer.defaultTransformers.concat(additionalTransformers).concat([required])
     columnMappers: mapping.defaultColumnMappers
   .init()
 .then (mapping) ->

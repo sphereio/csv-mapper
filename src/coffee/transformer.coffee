@@ -101,9 +101,10 @@ class RequiredTransformer extends ValueTransformer
     options.type is 'required'
 
   constructor: (transformers, options) ->
+    @_disabled = options.disable or false
 
   transform: (value, row) ->
-    if util.nonEmpty(value)
+    if @_disabled or util.nonEmpty(value)
       Q(value)
     else
       Q.reject new Error("Value is empty.")
@@ -346,7 +347,6 @@ module.exports =
     ConstantTransformer
     PrintTransformer
     ColumnTransformer
-    RequiredTransformer
     UpperCaseTransformer
     LowerCaseTransformer
     SlugifyTransformer

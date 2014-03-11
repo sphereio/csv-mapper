@@ -54,6 +54,7 @@ sudo npm install . -g
       --timeout             Set timeout for requests                                                                         [default: 300000]
       --dryRun, -d          No external side-effects would be performed (also sphere services would generate mocked values)  [default: false]
       --attemptsOnConflict  Number of attempts to update the project in case of conflict (409 HTTP status)                   [default: 10]
+      --disableAsserts      disable asserts (e.g.: required)
 
 The only required argument is `mapping` (see below). If you want to use SPHERE.IO specific value transformers in the mapping,
 then you also need to specify `projectKey`, `clientId`, `clientSecret`. Please note, that mapping can be not only a plain file,
