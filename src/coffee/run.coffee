@@ -1,4 +1,4 @@
-_ = require('underscore')._
+{_} = require 'underscore'
 
 util = require '../lib/util'
 package_json = require '../package.json'

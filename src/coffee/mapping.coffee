@@ -173,6 +173,7 @@ class Mapping
     @_mappingConfig = options.mappingConfig
     @_transformers = options.transformers
     @_columnMappers = options.columnMappers
+    @groupColumn = @_mappingConfig.groupColumn
 
   init: ->
     @_constructMapping(@_mappingConfig)
@@ -194,9 +195,9 @@ class Mapping
   transformHeader: (groups, columnNames) ->
     _.reduce @_columnMapping, ((acc, mapping) -> mapping.transformHeader(acc, columnNames)), _.map(groups, (g) -> {group: g, newHeaders: []})
 
-  transformRow: (groups, row) ->
+  transformRow: (groups, row, additionalProperties = {}) ->
     mappingsSorted = _.sortBy @_columnMapping, (mapping) -> mapping.priority()
-    initialAcc = _.map(groups, (g) -> {group: g, row: []}).concat {group: util.virtualGroup(), row: []}
+    initialAcc = _.map(groups, (g) -> {group: g, row: {}}).concat {group: util.virtualGroup(), row: additionalProperties}
     _.reduce mappingsSorted, ((accRowPromise, mapping) -> accRowPromise.then((accRow) -> mapping.map(row, accRow))), Q(initialAcc)
 
 module.exports =

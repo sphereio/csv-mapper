@@ -1,7 +1,7 @@
 Q = require 'q'
 csv = require 'csv'
 
-_ = require('underscore')._
+{_} = require 'underscore'
 _s = require 'underscore.string'
 
 util = require '../lib/util'
@@ -38,20 +38,47 @@ class PrintTransformer extends ValueTransformer
     console.info value
     Q(value)
 
-#class RandomDelayTransformer extends ValueTransformer
-#  @create: (transformers, options) ->
-#    Q(new PrintTransformer(transformers, options))
-#
-#  @supports: (options) ->
-#    options.type is 'randonDelay'
-#
-#  constructor: (transformers, options) ->
-#    @_minMs = options.minMs
-#    @_maxMs = options.minMs
-#
-#  transform: (value, row) ->
-#    console.info value
-#    Q(value)
+class RandomDelayTransformer extends ValueTransformer
+  @create: (transformers, options) ->
+    Q(new RandomDelayTransformer(transformers, options))
+
+  @supports: (options) ->
+    options.type is 'randomDelay'
+
+  constructor: (transformers, options) ->
+    @_minMs = options.minMs or 10
+    @_maxMs = options.maxMs or 80
+
+  transform: (value, row) ->
+    Q.delay _.random(@_minMs, @_maxMs)
+    .then ->
+      value
+
+class CounterTransformer extends ValueTransformer
+  @create: (transformers, options) ->
+    Q(new CounterTransformer(transformers, options))
+
+  @supports: (options) ->
+    options.type is 'counter'
+
+  constructor: (transformers, options) ->
+    @_startAt = options.startAt or 0
+
+  transform: (value, row) ->
+    Q("" + (@_startAt + row.index))
+
+class GroupCounterTransformer extends ValueTransformer
+  @create: (transformers, options) ->
+    Q(new GroupCounterTransformer(transformers, options))
+
+  @supports: (options) ->
+    options.type is 'groupCounter'
+
+  constructor: (transformers, options) ->
+    @_startAt = options.startAt or 0
+
+  transform: (value, row) ->
+    Q("" + (@_startAt + (row.index - row.groupFirstIndex)))
 
 class ColumnTransformer extends ValueTransformer
   @create: (transformers, options) ->
@@ -312,17 +339,23 @@ module.exports =
   MultipartStringTransformer: MultipartStringTransformer
   AdditionalOptionsWrapper: AdditionalOptionsWrapper
   FallbackTransformer: FallbackTransformer
+  RandomDelayTransformer: RandomDelayTransformer
+  CounterTransformer: CounterTransformer
+  GroupCounterTransformer: GroupCounterTransformer
   defaultTransformers: [
-    ConstantTransformer,
-    PrintTransformer,
-    ColumnTransformer,
-    RequiredTransformer,
-    UpperCaseTransformer,
-    LowerCaseTransformer,
-    SlugifyTransformer,
-    RandomTransformer,
-    RegexpTransformer,
-    LookupTransformer,
-    MultipartStringTransformer,
+    ConstantTransformer
+    PrintTransformer
+    ColumnTransformer
+    RequiredTransformer
+    UpperCaseTransformer
+    LowerCaseTransformer
+    SlugifyTransformer
+    RandomTransformer
+    RegexpTransformer
+    LookupTransformer
+    MultipartStringTransformer
     FallbackTransformer
+    RandomDelayTransformer
+    CounterTransformer
+    GroupCounterTransformer
   ]

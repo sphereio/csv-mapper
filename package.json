@@ -37,7 +37,8 @@
     "q": "~1.0.0",
     "q-io": "~1.10.9",
     "csv": "0.3.7",
-    "sphere-node-connect": "0.3.0"
+    "sphere-node-connect": "0.3.0",
+    "rx": "2.2.13"
   },
   "devDependencies": {
     "coveralls": "~2.6.1",

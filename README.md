@@ -6,7 +6,7 @@ This app is designed to take input CSV file and map it to output CSV files accor
 
 # Setup
 
-* install [NodeJS](http://support.sphere.io/knowledgebase/articles/307722-install-nodejs-and-get-a-component-running) (platform for running application) 
+* install [NodeJS](http://support.sphere.io/knowledgebase/articles/307722-install-nodejs-and-get-a-component-running) (platform for running application)
 
 ### From scratch
 
@@ -78,6 +78,11 @@ Mapping is a json document that has following structure:
 
 There are several concepts, that you need to be aware of, when you are defining the mapping:
 
+In the top-level object of mapping you can specify following properties:
+
+* **description** - String (Optional) - Some info about this mapping
+* **groupColumn** - String (Optional) - the name of the column, which value is the save for all rows of this group. The order of the rows withing the group would be preserved.
+
 #### Columns Mappings
 
 They are used to create/delete columns. You can use column mappings of following types:
@@ -114,6 +119,9 @@ Here is the list of standard value transformers:
 * **constant** - returns some constant value (ignores input)
   * **value** - Anything - value to return
 * **print** - returns input value and prints it to the console in the process (useful for the debugging)
+* **randomDelay** - adds random delay during transformation
+  * **minMs** - Number
+  * **maxMs** - Number
 * **column** - returns value of specified column (ignores input)
   * **col** - String - the name of the column
 * **upper** - transforms input value to upper case
@@ -122,6 +130,10 @@ Here is the list of standard value transformers:
 * **random** - generates random output (ignores input)
   * **size** - Int - the size of the generated string
   * **chars** - String - the range of characters that should be used in the resulting string
+* **counter** - returns the index of the row
+  * **startAt** - Number (Optional) - the first index (by default `0`)
+* **groupCounter** - returns the index of the row within a group
+  * **startAt** - Number (Optional) - the first index (by default `0`)
 * **regexp** - searches input string with the help of regular expression and replaces found matches
   * **find** - String - regular expression to find
   * **replace** - String - replacement text (you can use placeholders like `$1` to insert groups)

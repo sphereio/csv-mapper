@@ -1,4 +1,5 @@
 Q = require 'q'
+Rx = require 'rx'
 csv = require 'csv'
 fs = require 'fs'
 
@@ -40,44 +41,31 @@ class Mapper
     if @_group is util.virtualGroup() or _.find(@_additionalOutCsv, (c) -> c.group is util.virtualGroup())
       throw new Error("You are not allowed to use vitual group for CSV creation. It's meant to be used within mapping itself.")
 
-  processCsv: (csvIn, csvOut, additionalWriters) ->
+  processCsv: (csvIn, outWriters) ->
     d = Q.defer()
 
-    # TODO: Cleanup this mess
-
-    writers = _.map additionalWriters, (w) ->
+    writers = _.map outWriters, (w) ->
       w.headers = null
       w.newHeaders = null
       w
 
-    writers.unshift
-      group: @_group
-      writer: null
-      headers: null
-      newHeaders: null
-
     requiredGroups = _.map writers, (w) -> w.group
-
+    buffers = {}
     headers = null
+    lastBufferGroupValue = null
 
     csv()
     .from.stream(csvIn, @_cvsOptions())
-    .to.stream(csvOut, @_cvsOptions())
     .transform (row, idx, done) =>
       if idx is 0 and @_includesHeaderRow
         headers = row
         newHeadersPerGroup = @_mapping.transformHeader requiredGroups, row
-        toReport = null
 
         _.each writers, (w) ->
           w.newHeaders = _.find(newHeadersPerGroup, (h) -> h.group is w.group).newHeaders
+          w.writer.write w.newHeaders
 
-          if w.writer
-            w.writer.write w.newHeaders
-          else
-            toReport = w.newHeaders
-
-        done null, toReport
+        done null, []
       else
         if idx is 0
           headers = _.map _.range(row.length), (idx) -> "#{idx}"
@@ -86,24 +74,44 @@ class Mapper
           _.each writers, (w) ->
             w.newHeaders = _.find(newHeadersPerGroup, (h) -> h.group is w.group).newHeaders
 
-        @_mapping.transformRow requiredGroups, @_convertToObject(headers, row)
-        .then (convertedPerGroup) =>
-          toReport = null
+        inObj = @_convertToObject(headers, row)
+        groupValue = if @_mapping.groupColumn? then inObj[@_mapping.groupColumn] else "#{idx}"
+        buffer = buffers[groupValue]
 
+        if not buffer?
+          buffer = new GroupBuffer()
+
+          if lastBufferGroupValue?
+            buffers[lastBufferGroupValue].finished()
+          buffers[groupValue] = buffer
+
+          if not @_mapping.groupColumn?
+            buffer.finished()
+
+        bufferFirstIdx = buffer.getFirstIndex() or idx
+        promise = @_mapping.transformRow requiredGroups, inObj,
+          index: if @_includesHeaderRow then idx - 1 else idx
+          groupFirstIndex: if @_includesHeaderRow then bufferFirstIdx - 1 else bufferFirstIdx
+        .then (val) ->
+          done null, []
+          val
+
+        buffer.add idx, promise
+        .then (convertedPerGroup) =>
           _.each writers, (w) =>
             result = @_convertFromObject(w.newHeaders, _.find(convertedPerGroup, (c) -> c.group is w.group).row)
-
-            if w.writer
-              w.writer.write result
-            else
-              toReport = result
-
-          done null, toReport
+            w.writer.write result
         .fail (error) ->
           done error, null
         .done()
-    .on('end', (count) -> d.resolve(count))
-    .on('error', (error) -> d.reject(error))
+        lastBufferGroupValue = groupValue
+    .on 'end', (count) ->
+      if lastBufferGroupValue?
+        buffers[lastBufferGroupValue].finished()
+
+      d.resolve(count)
+    .on 'error',
+      (error) -> d.reject(error)
 
     d.promise
 
@@ -124,7 +132,7 @@ class Mapper
 
   _createAdditionalWriters: (csvDefs) ->
     _.map csvDefs, (csvDef) =>
-      stream = fs.createWriteStream(csvDef.file)
+      stream = csvDef.stream or fs.createWriteStream(csvDef.file)
       writer = csv().to.stream(stream, @_cvsOptions())
 
       closeWriterFn = ->
@@ -138,24 +146,74 @@ class Mapper
         d.promise
 
       closeFn = ->
-        closeWriterFn()
-        .finally ->
-          util.closeStream(stream)
+        if not csvDef.dontClose
+          closeWriterFn()
+          .finally ->
+            util.closeStream(stream)
 
       {group: csvDef.group, writer: writer, close: closeFn}
 
   run: ->
     Q.spread [util.fileStreamOrStdin(@_inCsv), util.fileStreamOrStdout(@_outCsv)], (csvIn, csvOut) =>
+      mainWriters = @_createAdditionalWriters [{group: @_group, stream: csvOut, dontClose: true}]
       additionalWriters = @_createAdditionalWriters @_additionalOutCsv
+      allWriters = mainWriters.concat additionalWriters
 
       # strange, but error propagation does not wotk if the return value of the `finally` is returned
-      @processCsv(csvIn, csvOut, additionalWriters)
-      .finally =>
-        promises = _.map additionalWriters, (writer) -> writer.close()
-        promises.push(util.closeStream(csvOut)) if util.nonEmpty @_outCsv
+      @processCsv(csvIn, allWriters)
+      .finally ->
+        Q.all _.map(allWriters, (writer) -> writer.close())
 
-        Q.all promises
+class GroupBuffer
+  constructor: ->
+    @_buffer = {}
+    @_finished
+    @_written = false
 
+  finished: () ->
+    @_finished = true
+    @_checkWhetherFinished()
 
+  getFirstIndex: () ->
+    @_firstIdx
 
+  add: (idx, rowPromise) ->
+    d = Q.defer()
+
+    if not @_firstIdx?
+      @_firstIdx = idx
+      @_lastIdx = idx
+    else if @_lastIdx < idx
+      @_lastIdx = idx
+
+    rowPromise
+    .then (row) =>
+      @_incommingRow idx, row, d
+    .fail (error) ->
+      d.reject error
+    .done()
+
+    d.promise
+
+  _incommingRow: (idx, row, defer) ->
+    @_buffer["#{idx}"] = {idx: idx, row: row, defer: defer}
+
+    @_checkWhetherFinished()
+
+  _checkWhetherFinished: () ->
+    if not @_written and @_finished and @_allRowsFinished()
+      _.each @_getIdxs(), (idx) =>
+        box = @_buffer["#{idx}"]
+        box.defer.resolve box.row
+      @_written = true
+
+  _allRowsFinished: () ->
+    _.every @_getIdxs(), (idx) =>
+      @_buffer["#{idx}"]?
+
+  _getIdxs: () ->
+    if @_firstIdx is @_lastIdx
+      [@_firstIdx]
+    else
+      _.range(@_firstIdx, @_lastIdx + 1)
 exports.Mapper = Mapper
