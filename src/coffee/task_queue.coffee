@@ -19,7 +19,6 @@ class BatchTaskQueue
     if not @_active and @_queue.length > 0
       @_startTasks @_queue
       @_queue = []
-    else
 
   _startTasks: (tasks) ->
     @_active = true
