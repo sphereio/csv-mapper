@@ -45,7 +45,7 @@ if (argv.help)
   process.exit 0
 
 additionalTransformers =
-  if argv.projectKey and argv.clientId and argv.clientSecret
+  if (argv.projectKey and argv.clientId and argv.clientSecret) or argv.dryRun
     sphereService =
       if argv.dryRun
         new sphere_transformer.OfflineSphereService
