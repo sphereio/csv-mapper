@@ -80,6 +80,33 @@ class GroupCounterTransformer extends ValueTransformer
   transform: (value, row) ->
     Q("" + (@_startAt + (row.index - row.groupFirstIndex)))
 
+class OncePerGroupTransformer extends ValueTransformer
+  @create: (transformers, options) ->
+    (new OncePerGroupTransformer(transformers, options))._init()
+
+  @supports: (options) ->
+    options.type is 'oncePerGroup'
+
+  constructor: (transformers, options) ->
+    @_transformers = transformers
+    @_name = options.name
+    @_valueTransformersConfig = options.valueTransformers
+
+  _init: ->
+    util.initValueTransformers @_transformers, @_valueTransformersConfig
+    .then (vt) =>
+      @_valueTransformers = vt
+      this
+
+  transform: (value, row) ->
+    if row.groupContext[@_name]?
+      Q(row.groupContext[@_name])
+    else
+      util.transformValue @_valueTransformers, value, row
+      .then (newValue) =>
+        row.groupContext[@_name] = newValue
+        newValue
+
 class ColumnTransformer extends ValueTransformer
   @create: (transformers, options) ->
     Q(new ColumnTransformer(transformers, options))
@@ -343,6 +370,7 @@ module.exports =
   RandomDelayTransformer: RandomDelayTransformer
   CounterTransformer: CounterTransformer
   GroupCounterTransformer: GroupCounterTransformer
+  OncePerGroupTransformer: OncePerGroupTransformer
   defaultTransformers: [
     ConstantTransformer
     PrintTransformer
@@ -358,4 +386,5 @@ module.exports =
     RandomDelayTransformer
     CounterTransformer
     GroupCounterTransformer
+    OncePerGroupTransformer
   ]

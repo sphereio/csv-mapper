@@ -92,6 +92,7 @@ class Mapper
         promise = @_mapping.transformRow requiredGroups, inObj,
           index: if @_includesHeaderRow then idx - 1 else idx
           groupFirstIndex: if @_includesHeaderRow then bufferFirstIdx - 1 else bufferFirstIdx
+          groupContext: buffer.getContext()
         .then (val) ->
           done null, []
           val
@@ -167,8 +168,12 @@ class Mapper
 class GroupBuffer
   constructor: ->
     @_buffer = {}
+    @_context = {}
     @_finished
     @_written = false
+
+  getContext: () ->
+    @_context
 
   finished: () ->
     @_finished = true

@@ -135,6 +135,9 @@ Here is the list of standard value transformers:
   * **startAt** - Number (Optional) - the first index (by default `0`)
 * **groupCounter** - returns the index of the row within a group
   * **startAt** - Number (Optional) - the first index (by default `0`)
+* **oncePerGroup** - the child value transformers are evaluated only one time for each group
+  * **name** - String - the name of the cached evaluationResults
+  * **valueTransformers** - Array of value transformers - they would be evaluated only one time per group
 * **regexp** - searches input string with the help of regular expression and replaces found matches
   * **find** - String - regular expression to find
   * **replace** - String - replacement text (you can use placeholders like `$1` to insert groups)
