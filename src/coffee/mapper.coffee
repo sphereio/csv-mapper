@@ -78,26 +78,27 @@ class Mapper
         groupValue = if @_mapping.groupColumn? then inObj[@_mapping.groupColumn] else "#{idx}"
         buffer = buffers[groupValue]
 
-        if not buffer?
-          buffer = new GroupBuffer()
+        lastControlPromise =
+          if not buffer?
+            buffer = new GroupBuffer()
+            buffers[groupValue] = buffer
 
-          if lastBufferGroupValue?
-            buffers[lastBufferGroupValue].finished()
-          buffers[groupValue] = buffer
+            if lastBufferGroupValue?
+              buffers[lastBufferGroupValue].finished()
+            else
+              Q(false)
+          else
+            Q(false)
 
-          if not @_mapping.groupColumn?
-            buffer.finished()
+        [rowPromise, controlPromise] = buffer.add idx, =>
+          bufferFirstIdx = buffer.getFirstIndex() or idx
 
-        bufferFirstIdx = buffer.getFirstIndex() or idx
-        promise = @_mapping.transformRow requiredGroups, inObj,
-          index: if @_includesHeaderRow then idx - 1 else idx
-          groupFirstIndex: if @_includesHeaderRow then bufferFirstIdx - 1 else bufferFirstIdx
-          groupContext: buffer.getContext()
-        .then (val) ->
-          done null, []
-          val
+          @_mapping.transformRow requiredGroups, inObj,
+            index: if @_includesHeaderRow then idx - 1 else idx
+            groupFirstIndex: if @_includesHeaderRow then bufferFirstIdx - 1 else bufferFirstIdx
+            groupContext: buffer.getContext()
 
-        buffer.add idx, promise
+        rowPromise
         .then (convertedPerGroup) =>
           _.each writers, (w) =>
             result = @_convertFromObject(w.newHeaders, _.find(convertedPerGroup, (c) -> c.group is w.group).row)
@@ -105,12 +106,28 @@ class Mapper
         .fail (error) ->
           done error, null
         .done()
+
+        Q.all [controlPromise, lastControlPromise]
+        .then ->
+          done null, []
+        .fail (error) ->
+          done error, null
+        .done()
+
         lastBufferGroupValue = groupValue
     .on 'end', (count) ->
-      if lastBufferGroupValue?
-        buffers[lastBufferGroupValue].finished()
+      p =
+        if lastBufferGroupValue?
+          buffers[lastBufferGroupValue].finished()
+        else
+          Q(false)
 
-      d.resolve(count)
+      p
+      .then ->
+        d.resolve count
+      .fail (error) ->
+        d.reject error
+      .done()
     .on 'error',
       (error) -> d.reject(error)
 
@@ -182,7 +199,7 @@ class GroupBuffer
   getFirstIndex: () ->
     @_firstIdx
 
-  add: (idx, rowPromise) ->
+  add: (idx, rowFn) ->
     d = Q.defer()
 
     if not @_firstIdx?
@@ -191,26 +208,32 @@ class GroupBuffer
     else if @_lastIdx < idx
       @_lastIdx = idx
 
-    rowPromise
-    .then (row) =>
-      @_incommingRow idx, row, d
-    .fail (error) ->
-      d.reject error
-    .done()
+    [d.promise, @_incommingRow idx, rowFn, d]
 
-    d.promise
-
-  _incommingRow: (idx, row, defer) ->
-    @_buffer["#{idx}"] = {idx: idx, row: row, defer: defer}
+  _incommingRow: (idx, rowFn, defer) ->
+    @_buffer["#{idx}"] = {idx: idx, row: rowFn, defer: defer}
 
     @_checkWhetherFinished()
 
   _checkWhetherFinished: () ->
     if not @_written and @_finished and @_allRowsFinished()
-      _.each @_getIdxs(), (idx) =>
-        box = @_buffer["#{idx}"]
-        box.defer.resolve box.row
       @_written = true
+
+      ps = _.map @_getIdxs(), (idx) =>
+        box = @_buffer["#{idx}"]
+
+        box.row()
+        .then (row) ->
+          box.defer.resolve row
+        .fail (error) ->
+          box.defer.reject error
+          Q.reject error
+
+      Q.all ps
+      .then ->
+        true
+    else
+      Q(false)
 
   _allRowsFinished: () ->
     _.every @_getIdxs(), (idx) =>
