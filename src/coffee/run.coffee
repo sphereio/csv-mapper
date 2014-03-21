@@ -1,7 +1,9 @@
+Q = require 'q'
 {_} = require 'underscore'
 
 util = require '../lib/util'
 package_json = require '../package.json'
+{ProjectCredentialsConfig} = require 'sphere-node-utils'
 
 optimist = require('optimist')
 .usage('Usage: $0 --mapping [mapping.json]')
@@ -44,33 +46,6 @@ if (argv.help)
   optimist.showHelp()
   process.exit 0
 
-additionalTransformers =
-  if (argv.projectKey and argv.clientId and argv.clientSecret) or argv.dryRun
-    sphereService =
-      if argv.dryRun
-        new sphere_transformer.OfflineSphereService
-      else
-        new sphere_transformer.SphereService
-          connector:
-            config:
-              project_key: argv.projectKey
-              client_id: argv.clientId
-              client_secret: argv.clientSecret
-            timeout: argv.timeout
-            user_agent: "#{package_json.name} - #{package_json.version}"
-          repeater:
-            attempts: argv.attemptsOnConflict
-            timeout: 100
-
-    sphereSequence = new transformer.AdditionalOptionsWrapper sphere_transformer.SphereSequenceTransformer,
-      sphereService: sphereService
-    repeatOnDuplicateSku = new transformer.AdditionalOptionsWrapper sphere_transformer.RepeatOnDuplicateSkuTransformer,
-      sphereService: sphereService
-
-    [sphereSequence, repeatOnDuplicateSku]
-  else
-    []
-
 required =
   if argv.disableAsserts
     new transformer.AdditionalOptionsWrapper transformer.RequiredTransformer,
@@ -79,8 +54,34 @@ required =
     transformer.RequiredTransformer
 
 
-util.loadFile argv.mapping
-.then (mappingText) ->
+Q.spread [util.loadFile(argv.mapping), ProjectCredentialsConfig.create()], (mappingText, credentialsConfig) ->
+  additionalTransformers =
+    if argv.projectKey? or argv.dryRun
+      sphereService =
+        if argv.dryRun
+          new sphere_transformer.OfflineSphereService
+        else
+          new sphere_transformer.SphereService
+            connector:
+              config: credentialsConfig.enrichCredentials
+                project_key: argv.projectKey
+                client_id: argv.clientId
+                client_secret: argv.clientSecret
+              timeout: argv.timeout
+              user_agent: "#{package_json.name} - #{package_json.version}"
+            repeater:
+              attempts: argv.attemptsOnConflict
+              timeout: 100
+
+      sphereSequence = new transformer.AdditionalOptionsWrapper sphere_transformer.SphereSequenceTransformer,
+        sphereService: sphereService
+      repeatOnDuplicateSku = new transformer.AdditionalOptionsWrapper sphere_transformer.RepeatOnDuplicateSkuTransformer,
+        sphereService: sphereService
+
+      [sphereSequence, repeatOnDuplicateSku]
+    else
+      []
+
   new mapping.Mapping
     mappingConfig: JSON.parse(mappingText)
     transformers: transformer.defaultTransformers.concat(additionalTransformers).concat([required])

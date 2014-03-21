@@ -100,12 +100,12 @@ class OncePerGroupTransformer extends ValueTransformer
 
   transform: (value, row) ->
     if row.groupContext[@_name]?
-      Q(row.groupContext[@_name])
+      row.groupContext[@_name]
     else
-      util.transformValue @_valueTransformers, value, row
-      .then (newValue) =>
-        row.groupContext[@_name] = newValue
-        newValue
+      row.groupContext[@_name] =
+        util.transformValue @_valueTransformers, value, row
+        .then (newValue) =>
+          newValue
 
 class ColumnTransformer extends ValueTransformer
   @create: (transformers, options) ->
