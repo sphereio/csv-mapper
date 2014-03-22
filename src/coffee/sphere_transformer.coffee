@@ -39,6 +39,8 @@ class RepeatOnDuplicateSkuTransformer extends transformer.ValueTransformer
     options.type is 'repeatOnDuplicateSku'
 
   constructor: (transformers, options) ->
+    @_name = options.name
+
     @_transformers = transformers
     @_sphere = options.sphereService
     @_attempts = options.attempts
@@ -50,14 +52,69 @@ class RepeatOnDuplicateSkuTransformer extends transformer.ValueTransformer
       @_valueTransformers = vt
       this
 
-  transform: (value, row) ->
-    @_sphere.repeatOnDuplicateSku
-      attempts: @_attempts
-      valueFn: () =>
-        util.transformValue @_valueTransformers, value, row
-        .then (newValue) =>
-          @_sphere.checkUniqueSku newValue
+  _getElection: (row, round) ->
+    if row.groupContext[@_name + ".election"]?
+      row.groupContext[@_name + ".election"]["#{round}"]
+    else
+      null
 
+  _setElection: (row, round, value) ->
+    if not row.groupContext[@_name + ".election"]?
+      row.groupContext[@_name + ".election"] = {}
+
+    row.groupContext[@_name + ".election"]["#{round}"] = value
+
+  _clearGroupContext: (row) ->
+    delete row.groupContext[@_name]
+
+  _myGroupIdx: (row) ->
+    row.index - row.groupFirstIndex
+
+  _setupElections: (row, round = 1) ->
+    election =  @_getElection(row, round)
+
+    if not election?
+      election = _.map _.range(row.groupRows), (idx) ->
+        d = Q.defer()
+        {defer: d, promise: d.promise}
+
+      election = @_setElection row, round, election
+
+    [election, election[@_myGroupIdx(row)], round]
+
+  _decideMyVote: (value, row, vote) ->
+    util.transformValue @_valueTransformers, value, row
+    .then (newValue) =>
+      @_sphere.checkUniqueSku newValue
+    .then (res) ->
+      vote.resolve res
+    .fail (error) ->
+      vote.reject error
+    .done()
+
+  _startElection: (value, row, election, myVote, round, lastDisagreement) ->
+    if round > @_attempts
+      Q.reject lastDisagreement
+    else
+      @_clearGroupContext row
+
+      @_decideMyVote value, row, myVote.defer
+
+      Q.all _.map(election, (voter) -> voter.promise)
+      .then (consensus) =>
+        consensus[@_myGroupIdx(row)]
+      .fail (disagreement) =>
+        if disagreement instanceof DuplicateSku
+          [nextElection, myNextVote, nextRound] = @_setupElections row, round + 1
+
+          @_startElection value, row, nextElection, myNextVote, nextRound, disagreement
+        else
+          Q.reject error
+
+  transform: (value, row) ->
+    [election, myVote, round] = @_setupElections row
+
+    @_startElection value, row, election, myVote, round
 
 class ErrorStatusCode extends Error
   constructor: (@code, @body) ->

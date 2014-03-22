@@ -90,13 +90,14 @@ class Mapper
           else
             Q(false)
 
-        [rowPromise, controlPromise] = buffer.add idx, =>
+        [rowPromise, controlPromise] = buffer.add idx, (groupRows) =>
           bufferFirstIdx = buffer.getFirstIndex() or idx
 
           @_mapping.transformRow requiredGroups, inObj,
             index: if @_includesHeaderRow then idx - 1 else idx
             groupFirstIndex: if @_includesHeaderRow then bufferFirstIdx - 1 else bufferFirstIdx
             groupContext: buffer.getContext()
+            groupRows: groupRows
 
         rowPromise
         .then (convertedPerGroup) =>
@@ -222,7 +223,7 @@ class GroupBuffer
       ps = _.map @_getIdxs(), (idx) =>
         box = @_buffer["#{idx}"]
 
-        box.row()
+        box.row _.size(@_getIdxs())
         .then (row) ->
           box.defer.resolve row
         .fail (error) ->

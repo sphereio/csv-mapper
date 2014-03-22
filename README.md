@@ -172,6 +172,7 @@ SPHERE.IO specific value transformers (Please keep in mind, that you need to spe
   * **increment** - Int - Increment step
   * **rotate** - Boolean - Whether it is allowed to start from the min if sequence reached max (or vice versa for the negative step)
 * **repeatOnDuplicateSku** - Generates new SKU and verifies, that it's unique across the project
+  * **name** - String - the name of this transformer within a group. If you together with `oncePerGroup`, then they both should have the same name
   * **attempts** - Int - The number of attempts before giving up and interruption of the mapping process
   * **valueTransformers** - Array of value transformers - Value transformers that are used to generate new SKUs
 
