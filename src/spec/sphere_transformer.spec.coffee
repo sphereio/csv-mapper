@@ -17,7 +17,7 @@ describe 'Sphere transformers', ->
       Q(sku)
 
   describe 'SphereSequenceTransformer', ->
-    it 'should get and inremented counter from sphere service', (done) ->
+    it 'should get and incremented counter from sphere service', (done) ->
       mock = mockSphereService()
 
       spyOn(mock, 'getAndIncrementCounter').andCallThrough()
@@ -31,7 +31,11 @@ describe 'Sphere transformers', ->
         increment: 1
         rotate: false
       .then (t) ->
-        t.transform 'Hello World!', {}
+        t.transform 'Hello World!',
+          index: 0
+          groupFirstIndex: 0
+          groupContext: {}
+          groupRows: 1
       .then (result) ->
         expect(mock.getAndIncrementCounter).toHaveBeenCalled()
         expect(result).toEqual 12345
@@ -41,10 +45,9 @@ describe 'Sphere transformers', ->
       .done()
 
   describe 'RepeatOnDuplicateSkuTransformer', ->
-    it 'should get and inremented counter from sphere service', (done) ->
+    it 'should check whether SKU already exists', (done) ->
       mock = mockSphereService()
 
-      spyOn(mock, 'repeatOnDuplicateSku').andCallThrough()
       spyOn(mock, 'checkUniqueSku').andCallThrough()
 
       RepeatOnDuplicateSkuTransformer.create defaultTransformers,
@@ -52,9 +55,12 @@ describe 'Sphere transformers', ->
         attempts: 5
         valueTransformers: [{type: "constant", value: "foo"}]
       .then (t) ->
-        t.transform 'Hello World!', {}
+        t.transform 'Hello World!',
+          index: 0
+          groupFirstIndex: 0
+          groupContext: {}
+          groupRows: 1
       .then (result) ->
-        expect(mock.repeatOnDuplicateSku).toHaveBeenCalled()
         expect(mock.checkUniqueSku).toHaveBeenCalled()
         expect(result).toEqual 'foo'
         done()

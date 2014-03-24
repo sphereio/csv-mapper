@@ -104,7 +104,7 @@ class OncePerGroupTransformer extends ValueTransformer
     else
       row.groupContext[@_name] =
         util.transformValue @_valueTransformers, value, row
-        .then (newValue) =>
+        .then (newValue) ->
           newValue
 
 class ColumnTransformer extends ValueTransformer
