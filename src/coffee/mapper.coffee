@@ -85,12 +85,13 @@ class Mapper
 
             if lastBufferGroupValue?
               buffers[lastBufferGroupValue].finished()
+              delete buffers[lastBufferGroupValue]
             else
               Q(false)
           else
             Q(false)
 
-        [rowPromise, controlPromise] = buffer.add idx, (groupRows) =>
+        [rowPromise, rowFinishedDefer, controlPromise] = buffer.add idx, (groupRows) =>
           bufferFirstIdx = buffer.getFirstIndex() or idx
 
           @_mapping.transformRow requiredGroups, inObj,
@@ -104,8 +105,11 @@ class Mapper
           _.each writers, (w) =>
             result = @_convertFromObject(w.newHeaders, _.find(convertedPerGroup, (c) -> c.group is w.group).row)
             w.writer.write result
+
+          rowFinishedDefer.resolve true
         .fail (error) ->
           done error, null
+          rowFinishedDefer.reject error
         .done()
 
         Q.all [controlPromise, lastControlPromise]
@@ -173,8 +177,8 @@ class Mapper
       {group: csvDef.group, writer: writer, close: closeFn}
 
   run: ->
-    Q.spread [util.fileStreamOrStdin(@_inCsv), util.fileStreamOrStdout(@_outCsv)], (csvIn, csvOut) =>
-      mainWriters = @_createAdditionalWriters [{group: @_group, stream: csvOut, dontClose: true}]
+    Q.spread [util.fileStreamOrStdin(@_inCsv), util.fileStreamOrStdout(@_outCsv)], ([csvIn, doNotCloseIn], [csvOut, doNotCloseStdOut]) =>
+      mainWriters = @_createAdditionalWriters [{group: @_group, stream: csvOut, dontClose: doNotCloseStdOut}]
       additionalWriters = @_createAdditionalWriters @_additionalOutCsv
       allWriters = mainWriters.concat additionalWriters
 
@@ -202,6 +206,7 @@ class GroupBuffer
 
   add: (idx, rowFn) ->
     d = Q.defer()
+    dRowFinished = Q.defer()
 
     if not @_firstIdx?
       @_firstIdx = idx
@@ -209,10 +214,10 @@ class GroupBuffer
     else if @_lastIdx < idx
       @_lastIdx = idx
 
-    [d.promise, @_incommingRow idx, rowFn, d]
+    [d.promise, dRowFinished, @_incommingRow(idx, rowFn, d, dRowFinished.promise)]
 
-  _incommingRow: (idx, rowFn, defer) ->
-    @_buffer["#{idx}"] = {idx: idx, row: rowFn, defer: defer}
+  _incommingRow: (idx, rowFn, defer, rowFinishedPromise) ->
+    @_buffer["#{idx}"] = {idx: idx, row: rowFn, defer: defer, rowFinishedPromise: rowFinishedPromise}
 
     @_checkWhetherFinished()
 
@@ -224,13 +229,20 @@ class GroupBuffer
         box = @_buffer["#{idx}"]
 
         box.row _.size(@_getIdxs())
-        .then (row) ->
-          box.defer.resolve row
+        .then (res) ->
+          [box, res]
         .fail (error) ->
           box.defer.reject error
           Q.reject error
 
       Q.all ps
+      .then (list) ->
+        writtenPs = _.map list, (elem) ->
+          [box, row] = elem
+          box.defer.resolve row
+          box.rowFinishedPromise
+
+        Q.all writtenPs
       .then ->
         true
     else

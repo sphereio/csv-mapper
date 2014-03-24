@@ -308,13 +308,13 @@ class MultipartStringTransformer extends ValueTransformer
       .then (transformed) ->
         if not size
           transformed
-        else if transformed.length < size and pad
+        else if transformed? and transformed.length < size and pad
           _s.pad(transformed, size, pad)
-        else if transformed.length is size
+        else if transformed? and transformed.length is size
           transformed
         else
           valueMessage = if value then " with current value '#{value}'" else ""
-          throw new Error("Generated column part size (#{transformed.length} - '#{transformed}') is smaller than expected size (#{size}) and no padding is defined for this column. Source column '#{fromCol}' (part #{idx})#{valueMessage}.")
+          throw new Error("Generated column part size (#{if not transformed? then 0 else transformed.length} - '#{transformed}') is smaller than expected size (#{size}) and no padding is defined for this column. Source column '#{fromCol}' (part #{idx})#{valueMessage}.")
 
     Q.all partialValuePromises
     .then (partialValues) ->

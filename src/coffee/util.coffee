@@ -20,15 +20,15 @@ module.exports =
   fileStreamOrStdin: (filePath) ->
     fs.exists(filePath).then (exists) ->
       if exists
-        stdFs.createReadStream filePath
+        [stdFs.createReadStream(filePath), false]
       else
-        process.stdin
+        [process.stdin, true]
 
   fileStreamOrStdout: (filePath) ->
     if (@nonEmpty filePath)
-      Q(stdFs.createWriteStream filePath)
+      Q([stdFs.createWriteStream(filePath), false])
     else
-      Q(process.stdout)
+      Q([process.stdout, true])
 
   closeStream: (stream) ->
     d = Q.defer()
