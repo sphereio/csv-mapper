@@ -53,6 +53,8 @@ class Mapper
     buffers = {}
     headers = null
     lastBufferGroupValue = null
+    groupCount = 0
+    lastGroupCountValue = null
 
     csv()
     .from.stream(csvIn, @_cvsOptions())
@@ -75,7 +77,25 @@ class Mapper
             w.newHeaders = _.find(newHeadersPerGroup, (h) -> h.group is w.group).newHeaders
 
         inObj = @_convertToObject(headers, row)
-        groupValue = if @_mapping.groupColumn? then inObj[@_mapping.groupColumn] else "#{idx}"
+        groupValue =
+          if @_mapping.groupColumn?
+            if @_mapping.groupColumn.type is 'constant'
+              inObj[@_mapping.groupColumn.col]
+            else if @_mapping.groupColumn.type is 'asc'
+              if not lastGroupCountValue? or parseInt(inObj[@_mapping.groupColumn.col]) < parseInt(lastGroupCountValue)
+                groupCount = groupCount + 1
+
+              groupCount
+            else if @_mapping.groupColumn.type is 'desc'
+              if not lastGroupCountValue? or parseInt(inObj[@_mapping.groupColumn.col]) > parseInt(lastGroupCountValue)
+                groupCount = groupCount + 1
+
+              groupCount
+            else
+              throw new Error("Unkbown groupping type: " + @_mapping.groupColumn.type)
+          else
+            "#{idx}"
+
         buffer = buffers[groupValue]
 
         lastControlPromise =
@@ -120,6 +140,9 @@ class Mapper
         .done()
 
         lastBufferGroupValue = groupValue
+
+        if @_mapping.groupColumn?
+          lastGroupCountValue = inObj[@_mapping.groupColumn.col]
     .on 'end', (count) ->
       p =
         if lastBufferGroupValue?

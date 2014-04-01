@@ -82,7 +82,9 @@ There are several concepts, that you need to be aware of, when you are defining 
 In the top-level object of mapping you can specify following properties:
 
 * **description** - String (Optional) - Some info about this mapping
-* **groupColumn** - String (Optional) - the name of the column, which value is the save for all rows of this group. The order of the rows withing the group would be preserved.
+* **groupColumn** - Object (Optional) - the grouping column definition
+  * **col** - String - the name of the column
+  * **type** - String - One of: **constant**, **asc**, **desc**
 
 #### Columns Mappings
 
