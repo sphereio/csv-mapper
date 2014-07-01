@@ -20,7 +20,7 @@
       "url": "https://github.com/sphereio/csv-mapper/blob/master/LICENSE-MIT"
     }
   ],
-  "main": "lib/csv-mapper",
+  "main": "main",
   "engines": {
     "node": ">= 0.10.0"
   },
