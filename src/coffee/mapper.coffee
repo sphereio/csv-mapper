@@ -280,4 +280,5 @@ class GroupBuffer
       [@_firstIdx]
     else
       _.range(@_firstIdx, @_lastIdx + 1)
+
 exports.Mapper = Mapper
