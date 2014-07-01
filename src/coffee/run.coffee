@@ -7,9 +7,6 @@ package_json = require '../package.json'
 
 optimist = require('optimist')
 .usage('Usage: $0 --mapping [mapping.json]')
-.alias('projectKey', 'k')
-.alias('clientId', 'i')
-.alias('clientSecret', 's')
 .alias('help', 'h')
 .alias('mapping', 'm')
 .alias('dryRun', 'd')
