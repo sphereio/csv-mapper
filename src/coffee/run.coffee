@@ -45,8 +45,7 @@ required =
   else
     transformer.RequiredTransformer
 
-
-Q.spread [util.loadFile(argv.mapping), ProjectCredentialsConfig.create()], (mappingText, credentialsConfig) ->
+Q.spread [util.loadFile(argv.mapping)], (mappingText) ->
   new mapping.Mapping
     mappingConfig: JSON.parse(mappingText)
     transformers: transformer.defaultTransformers.concat([required])
