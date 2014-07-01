@@ -3,7 +3,6 @@ Q = require 'q'
 
 util = require '../lib/util'
 package_json = require '../package.json'
-{ProjectCredentialsConfig} = require 'sphere-node-utils'
 
 optimist = require('optimist')
 .usage('Usage: $0 --mapping [mapping.json]')
