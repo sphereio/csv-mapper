@@ -1,6 +1,6 @@
 # csv-mapper
 
-[![Build Status](https://travis-ci.org/sphereio/csv-mapper.png?branch=master)](https://travis-ci.org/sphereio/csv-mapper) [![Dependency Status](https://david-dm.org/sphereio/csv-mapper.png?theme=shields.io)](https://david-dm.org/sphereio/csv-mapper) [![devDependency Status](https://david-dm.org/sphereio/csv-mapper/dev-status.png?theme=shields.io)](https://david-dm.org/sphereio/csv-mapper#info=devDependencies)
+[![Build Status](https://travis-ci.org/sphereio/csv-mapper.png?branch=master)](https://travis-ci.org/sphereio/csv-mapper) [![NPM version](https://badge.fury.io/js/csv-mapper.png)](http://badge.fury.io/js/csv-mapper) [![Dependency Status](https://david-dm.org/sphereio/csv-mapper.png?theme=shields.io)](https://david-dm.org/sphereio/csv-mapper) [![devDependency Status](https://david-dm.org/sphereio/csv-mapper/dev-status.png?theme=shields.io)](https://david-dm.org/sphereio/csv-mapper#info=devDependencies)
 
 This library is designed to take input CSV file and map it to output CSV files according to the  very flexible JSON mapping.
 
