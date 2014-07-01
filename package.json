@@ -1,26 +1,26 @@
 {
-  "name": "sphere-product-mapper",
+  "name": "csv-mapper",
   "description": "The best project ever.",
   "version": "0.1.5",
-  "homepage": "https://github.com/sphereio/sphere-product-mapper",
+  "homepage": "https://github.com/sphereio/csv-mapper",
   "author": {
     "name": "Oleg Ilyenko",
     "email": "oleg.ilyenko@gmail.com"
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com:sphereio/sphere-product-mapper.git"
+    "url": "git@github.com:sphereio/csv-mapper.git"
   },
   "bugs": {
-    "url": "https://github.com/sphereio/sphere-product-mapper/issues"
+    "url": "https://github.com/sphereio/csv-mapper/issues"
   },
   "licenses": [
     {
       "type": "MIT",
-      "url": "https://github.com/sphereio/sphere-product-mapper/blob/master/LICENSE-MIT"
+      "url": "https://github.com/sphereio/csv-mapper/blob/master/LICENSE-MIT"
     }
   ],
-  "main": "lib/sphere-product-mapper",
+  "main": "lib/csv-mapper",
   "engines": {
     "node": ">= 0.10.0"
   },

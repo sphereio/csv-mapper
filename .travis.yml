@@ -3,19 +3,9 @@ node_js:
   - '0.10'
 before_script:
   - npm install -g grunt-cli
-  - ./create_config.sh
 script:
   - npm test
   - node lib/run.js --mapping test-data/test-mapping.json --inCsv test-data/test-small.csv
-notifications:
-  hipchat:
-    rooms:
-      - secure: RI/hYajFAWdDOEHEezjrGA4RwA5hT7LmFYt2CS4zTVVmp3GUyYIXLjTi400WMZhbKH+ubYsKx+uMMOJ98CI0qLdgk+rRJBjVRKpgVFcz2vWHnTEdSaiM/zvE/SOooNqs+gEzjjPJTGeuPTWto0NuGvV5yvK1Gslkm3L26YFhpDI=
-    template:
-      - '%{repository}#%{build_number} (%{author}): %{message} (<a href="%{build_url}">Details</a> <a href="%{compare_url}">Compare</a>)'
-    format: html
-    on_success: change
-    on_failure: always
 branches:
   only:
     - master

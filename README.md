@@ -1,8 +1,8 @@
-# sphere-product-mapper
+# csv-mapper
 
-[![Build Status](https://travis-ci.org/sphereio/sphere-product-mapper.png?branch=master)](https://travis-ci.org/sphereio/sphere-product-mapper) [![Coverage Status](https://coveralls.io/repos/sphereio/sphere-product-mapper/badge.png?branch=master)](https://coveralls.io/r/sphereio/sphere-product-mapper?branch=master) [![Dependency Status](https://david-dm.org/sphereio/sphere-product-mapper.png?theme=shields.io)](https://david-dm.org/sphereio/sphere-product-mapper) [![devDependency Status](https://david-dm.org/sphereio/sphere-product-mapper/dev-status.png?theme=shields.io)](https://david-dm.org/sphereio/sphere-product-mapper#info=devDependencies)
+[![Build Status](https://travis-ci.org/sphereio/csv-mapper.png?branch=master)](https://travis-ci.org/sphereio/csv-mapper) [![Dependency Status](https://david-dm.org/sphereio/csv-mapper.png?theme=shields.io)](https://david-dm.org/sphereio/csv-mapper) [![devDependency Status](https://david-dm.org/sphereio/csv-mapper/dev-status.png?theme=shields.io)](https://david-dm.org/sphereio/csv-mapper#info=devDependencies)
 
-This app is designed to take input CSV file and map it to output CSV files according to the mapping.
+This library is designed to take input CSV file and map it to output CSV files according to the  very flexible JSON mapping.
 
 # Setup
 
@@ -23,14 +23,10 @@ $ grunt build
 
 ### From ZIP
 
-* Just download the ready to use application as [ZIP](https://github.com/sphereio/sphere-product-mapper/archive/latest.zip)
-* Extract the latest.zip with `unzip sphere-product-mapper-latest.zip`
-* Change into the directory `cd sphere-product-mapper-latest`
-
-To make the application globally available in your terminal, please do
+To make the application globally available, please do
 
 ```bash
-sudo npm install . -g
+sudo npm install csv-mapper
 ```
 
 ## Documentation
@@ -56,9 +52,7 @@ sudo npm install . -g
       --attemptsOnConflict  Number of attempts to update the project in case of conflict (409 HTTP status)                   [default: 10]
       --disableAsserts      disable asserts (e.g.: required)
 
-The only required argument is `mapping` (see below). If you want to use SPHERE.IO specific value transformers in the mapping,
-then you also need to specify `projectKey`, `clientId`, `clientSecret`. Please note, that mapping can be not only a plain file,
-but also a URL.
+The only required argument is `mapping` (see below).
 
 ### Mapping File
 
@@ -195,7 +189,7 @@ There are 2 special group names:
 
 ## Examples
 
-You can find example mapping in [the project itself](https://github.com/sphereio/sphere-product-mapper/blob/master/test-data/test-mapping.json).
+You can find example mapping in [the project itself](https://github.com/sphereio/csv-mapper/blob/master/test-data/test-mapping.json).
 If you are in the project root, you can map an example CSV file like this:
 
     csv-mapper --mapping test-data/test-mapping.json --inCsv test-data/test-large.csv
@@ -220,9 +214,6 @@ grunt release // patch release
 grunt release:minor // minor release
 grunt release:major // major release
 ```
-
-## Styleguide
-We <3 CoffeeScript here at commercetools! So please have a look at this referenced [coffeescript styleguide](https://github.com/polarmobile/coffeescript-style-guide) when doing changes to the code.
 
 ## License
 Copyright (c) 2014 Oleg Ilyenko
