@@ -23,7 +23,7 @@ $ grunt build
 
 ### Install CLI Globally
 
-To make the application globally available, please do
+To make the application globally available, please do:
 
 ```bash
 sudo npm install csv-mapper -g
