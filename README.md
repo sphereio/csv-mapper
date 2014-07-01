@@ -21,12 +21,12 @@ $ npm install
 $ grunt build
 ```
 
-### From ZIP
+### Install CLI Globally
 
 To make the application globally available, please do
 
 ```bash
-sudo npm install csv-mapper
+sudo npm install csv-mapper -g
 ```
 
 ## Documentation
@@ -37,9 +37,6 @@ sudo npm install csv-mapper
 
     Options:
       --help, -h            Shows usage info and exits.
-      --projectKey, -k      Sphere.io project key (required if you use sphere-specific value transformers).
-      --clientId, -i        Sphere.io HTTP API client id (required if you use sphere-specific value transformers).
-      --clientSecret, -s    Sphere.io HTTP API client secret (required if you use sphere-specific value transformers).
       --inCsv               The input product CSV file (optional, STDIN would be used if not specified).
       --outCsv              The output product CSV file (optional, STDOUT would be used if not specified).
       --csvDelimiter        CSV delimiter (by default ,).
@@ -48,7 +45,7 @@ sudo npm install csv-mapper
       --group               The column group that should be used.                                                            [string]  [default: "default"]
       --additionalOutCsv    Addition output CSV files separated by comma `,` and optionally prefixed with `groupName:`.
       --timeout             Set timeout for requests                                                                         [default: 300000]
-      --dryRun, -d          No external side-effects would be performed (also sphere services would generate mocked values)  [default: false]
+      --dryRun, -d          No external side-effects would be performed                                                      [default: false]
       --attemptsOnConflict  Number of attempts to update the project in case of conflict (409 HTTP status)                   [default: 10]
       --disableAsserts      disable asserts (e.g.: required)
 
@@ -157,20 +154,6 @@ Here is the list of workflow value transformers:
 * **required** - Interrupts mapping process if input value is empty or undefined
 * **fallback** - Evaluates provided value transformers one after another and returns the first non-undefined value
   * **valueTransformers** - Array of value transformers - the child value transformers that would be used to get first successful value
-
-SPHERE.IO specific value transformers (Please keep in mind, that you need to specify `projectKey`, `clientId`, `clientSecret` arguments, if you want them to be available):
-
-* **sphereSequence** - returns the next project-global counter value
-  * **name** - String - the name of the sequence
-  * **initial** - Int - Initial value for the new sequence
-  * **max** - Int - Maximum value of the sequence
-  * **min** - Int - Minimum value of the sequence
-  * **increment** - Int - Increment step
-  * **rotate** - Boolean - Whether it is allowed to start from the min if sequence reached max (or vice versa for the negative step)
-* **repeatOnDuplicateSku** - Generates new SKU and verifies, that it's unique across the project
-  * **name** - String - the name of this transformer within a group. If you together with `oncePerGroup`, then they both should have the same name
-  * **attempts** - Int - The number of attempts before giving up and interruption of the mapping process
-  * **valueTransformers** - Array of value transformers - Value transformers that are used to generate new SKUs
 
 #### Column Groups
 

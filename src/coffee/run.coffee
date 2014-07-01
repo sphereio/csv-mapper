@@ -14,9 +14,6 @@ optimist = require('optimist')
 .alias('mapping', 'm')
 .alias('dryRun', 'd')
 .describe('help', 'Shows usage info and exits.')
-.describe('projectKey', 'Sphere.io project key (required if you use sphere-specific value transformers).')
-.describe('clientId', 'Sphere.io HTTP API client id (required if you use sphere-specific value transformers).')
-.describe('clientSecret', 'Sphere.io HTTP API client secret (required if you use sphere-specific value transformers).')
 .describe('inCsv', 'The input product CSV file (optional, STDIN would be used if not specified).')
 .describe('outCsv', 'The output product CSV file (optional, STDOUT would be used if not specified).')
 .describe('csvDelimiter', 'CSV delimiter (by default ,).')
@@ -25,7 +22,7 @@ optimist = require('optimist')
 .describe('group', "The column group that should be used.")
 .describe('additionalOutCsv', 'Addition output CSV files separated by comma `,` and optionally prefixed with `groupName:`.')
 .describe('timeout', 'Set timeout for requests')
-.describe('dryRun', 'No external side-effects would be performed (also sphere services would generate mocked values)')
+.describe('dryRun', 'No external side-effects would be performed')
 .describe('attemptsOnConflict', 'Number of attempts to update the project in case of conflict (409 HTTP status)')
 .describe('disableAsserts', 'disable asserts (e.g.: required)')
 .default('timeout', 300000)
@@ -36,7 +33,6 @@ optimist = require('optimist')
 
 Mapper = require('../main').Mapper
 transformer = require('../main').transformer
-sphere_transformer = require('../main').sphere_transformer
 mapping = require('../main').mapping
 
 argv = optimist.argv
@@ -55,36 +51,9 @@ required =
 
 
 Q.spread [util.loadFile(argv.mapping), ProjectCredentialsConfig.create()], (mappingText, credentialsConfig) ->
-  additionalTransformers =
-    if argv.projectKey? or argv.dryRun
-      sphereService =
-        if argv.dryRun
-          new sphere_transformer.OfflineSphereService
-        else
-          new sphere_transformer.SphereService
-            connector:
-              config: credentialsConfig.enrichCredentials
-                project_key: argv.projectKey
-                client_id: argv.clientId
-                client_secret: argv.clientSecret
-              timeout: argv.timeout
-              user_agent: "#{package_json.name} - #{package_json.version}"
-            repeater:
-              attempts: argv.attemptsOnConflict
-              timeout: 100
-
-      sphereSequence = new transformer.AdditionalOptionsWrapper sphere_transformer.SphereSequenceTransformer,
-        sphereService: sphereService
-      repeatOnDuplicateSku = new transformer.AdditionalOptionsWrapper sphere_transformer.RepeatOnDuplicateSkuTransformer,
-        sphereService: sphereService
-
-      [sphereSequence, repeatOnDuplicateSku]
-    else
-      []
-
   new mapping.Mapping
     mappingConfig: JSON.parse(mappingText)
-    transformers: transformer.defaultTransformers.concat(additionalTransformers).concat([required])
+    transformers: transformer.defaultTransformers.concat([required])
     columnMappers: mapping.defaultColumnMappers
   .init()
 .then (mapping) ->
