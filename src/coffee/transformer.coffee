@@ -244,12 +244,12 @@ class LookupTransformer extends ValueTransformer
   _parseCsv: (csvText) ->
     d = Q.defer()
 
-    cvsOptions =
+    csvOptions =
       delimiter: @_csvDelimiter
       quote: @_csvQuote
 
     csv()
-    .from("#{csvText}", cvsOptions)
+    .from("#{csvText}", csvOptions)
     .to.array (data) =>
       d.resolve
         headers: if @_header then data.shift() else []

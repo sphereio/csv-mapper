@@ -57,7 +57,7 @@ class Mapper
     lastGroupCountValue = null
 
     csv()
-    .from.stream(csvIn, @_cvsOptions())
+    .from.stream(csvIn, @_csvOptions())
     .transform (row, idx, done) =>
       if idx is 0 and @_includesHeaderRow
         headers = row
@@ -161,7 +161,7 @@ class Mapper
 
     d.promise
 
-  _cvsOptions: ->
+  _csvOptions: ->
     delimiter: @_csvDelimiter
     quote: @_csvQuote
 
@@ -179,7 +179,7 @@ class Mapper
   _createAdditionalWriters: (csvDefs) ->
     _.map csvDefs, (csvDef) =>
       stream = csvDef.stream or fs.createWriteStream(csvDef.file)
-      writer = csv().to.stream(stream, @_cvsOptions())
+      writer = csv().to.stream(stream, @_csvOptions())
 
       closeWriterFn = ->
         d = Q.defer()
