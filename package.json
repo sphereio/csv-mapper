@@ -1,7 +1,7 @@
 {
   "name": "csv-mapper",
   "description": "Node library for mapping CSV files with flexible JSON DSL for the mapping definition.",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "homepage": "https://github.com/sphereio/csv-mapper",
   "author": {
     "name": "Oleg Ilyenko",
