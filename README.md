@@ -1,6 +1,6 @@
 # csv-mapper
 
-[![Build Status](https://travis-ci.org/sphereio/csv-mapper.png?branch=master)](https://travis-ci.org/sphereio/csv-mapper) [![NPM version](https://badge.fury.io/js/csv-mapper.png)](http://badge.fury.io/js/csv-mapper) [![Dependency Status](https://david-dm.org/sphereio/csv-mapper.png?theme=shields.io)](https://david-dm.org/sphereio/csv-mapper) [![devDependency Status](https://david-dm.org/sphereio/csv-mapper/dev-status.png?theme=shields.io)](https://david-dm.org/sphereio/csv-mapper#info=devDependencies)
+[![Build Status](https://travis-ci.org/sphereio/csv-mapper.png?branch=master)](https://travis-ci.org/sphereio/csv-mapper) [![NPM version](https://badge.fury.io/js/csv-mapper.png)](http://badge.fury.io/js/csv-mapper)
 
 This library is designed to take input CSV file and map it to output CSV files according to the  very flexible JSON mapping.
 
@@ -40,6 +40,8 @@ sudo npm install csv-mapper -g
       --inCsv               The input product CSV file (optional, STDIN would be used if not specified).
       --outCsv              The output product CSV file (optional, STDOUT would be used if not specified).
       --csvDelimiter        CSV delimiter (by default ,).
+      --inCsvDelimiter      CSV delimiter in input file (by default csvDelimiter is used).
+      --outCsvDelimiter     CSV delimiter in output files (by default csvDelimiter is used).
       --csvQuote            CSV quote (by default ").
       --mapping, -m         Mapping JSON file or URL.                                                                        [required]
       --group               The column group that should be used.                                                            [string]  [default: "default"]
