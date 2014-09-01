@@ -1,6 +1,6 @@
 Q = require 'q'
 fs = require 'q-io/fs'
-_ = require('underscore')._
+{_} = require 'underscore'
 
 transformer = require('../main').transformer
 

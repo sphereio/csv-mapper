@@ -3,7 +3,7 @@ fs = require 'q-io/fs'
 http = require 'q-io/http'
 
 stdFs = require 'fs'
-_ = require('underscore')._
+{_} = require 'underscore'
 _s = require 'underscore.string'
 
 ###

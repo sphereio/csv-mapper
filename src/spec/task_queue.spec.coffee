@@ -1,5 +1,5 @@
 Q = require 'q'
-_ = require('underscore')._
+{_} = require 'underscore'
 
 {BatchTaskQueue} = require('../lib/task_queue')
 

@@ -1,7 +1,7 @@
 Q = require 'q'
 csv = require 'csv'
 
-_ = require('underscore')._
+{_} = require 'underscore'
 _s = require 'underscore.string'
 
 util = require '../lib/util'

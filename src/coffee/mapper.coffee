@@ -3,7 +3,7 @@ Rx = require 'rx'
 csv = require 'csv'
 fs = require 'fs'
 
-_ = require('underscore')._
+{_} = require 'underscore'
 _s = require 'underscore.string'
 
 util = require '../lib/util'
@@ -30,6 +30,8 @@ class Mapper
     @_outCsv = options.outCsv
 
     @_csvDelimiter = options.csvDelimiter or ','
+    @_inCsvDelimiter = options.inCsvDelimiter or @_csvDelimiter
+    @_outCsvDelimiter = options.outCsvDelimiter or @_csvDelimiter
     @_csvQuote = options.csvQuote or '"'
 
     @_includesHeaderRow = options.includesHeaderRow or true
@@ -57,7 +59,7 @@ class Mapper
     lastGroupCountValue = null
 
     csv()
-    .from.stream(csvIn, @_csvOptions())
+    .from.stream(csvIn, @_inCsvOptions())
     .transform (row, idx, done) =>
       if idx is 0 and @_includesHeaderRow
         headers = row
@@ -161,8 +163,12 @@ class Mapper
 
     d.promise
 
-  _csvOptions: ->
-    delimiter: @_csvDelimiter
+  _inCsvOptions: ->
+    delimiter: @_inCsvDelimiter
+    quote: @_csvQuote
+
+  _outCsvOptions: ->
+    delimiter: @_outCsvDelimiter
     quote: @_csvQuote
 
   _convertToObject: (properties, row) ->
@@ -179,7 +185,7 @@ class Mapper
   _createAdditionalWriters: (csvDefs) ->
     _.map csvDefs, (csvDef) =>
       stream = csvDef.stream or fs.createWriteStream(csvDef.file)
-      writer = csv().to.stream(stream, @_csvOptions())
+      writer = csv().to.stream(stream, @_outCsvOptions())
 
       closeWriterFn = ->
         d = Q.defer()

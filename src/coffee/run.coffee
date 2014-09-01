@@ -13,6 +13,8 @@ optimist = require('optimist')
 .describe('inCsv', 'The input product CSV file (optional, STDIN would be used if not specified).')
 .describe('outCsv', 'The output product CSV file (optional, STDOUT would be used if not specified).')
 .describe('csvDelimiter', 'CSV delimiter (by default ,).')
+.describe('inCsvDelimiter', 'CSV delimiter in input file (by default csvDelimiter is used).')
+.describe('outCsvDelimiter', 'CSV delimiter in output files (by default csvDelimiter is used).')
 .describe('csvQuote', 'CSV quote (by default ").')
 .describe('mapping', 'Mapping JSON file or URL.')
 .describe('group', "The column group that should be used.")
@@ -56,6 +58,8 @@ Q.spread [util.loadFile(argv.mapping)], (mappingText) ->
     inCsv: argv.inCsv
     outCsv: argv.outCsv
     csvDelimiter: argv.csvDelimiter
+    inCsvDelimiter: argv.inCsvDelimiter
+    outCsvDelimiter: argv.outCsvDelimiter
     csvQuote: argv.csvQuote
     mapping: mapping
     group: argv.group
