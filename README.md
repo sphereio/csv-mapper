@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/sphereio/csv-mapper.png?branch=master)](https://travis-ci.org/sphereio/csv-mapper) [![NPM version](https://badge.fury.io/js/csv-mapper.png)](http://badge.fury.io/js/csv-mapper)
 
-This library is designed to take input CSV file and map it to output CSV files according to the  very flexible JSON mapping.
+This library is designed to take input CSV file and map it to output CSV files according to the  very flexible YAML/JSON mapping.
 
 # Setup
 
