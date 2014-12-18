@@ -1,0 +1,181 @@
+description: "Test mapping"
+columnMapping:
+  -
+    # yay! comments!
+    type: "addColumn"
+    toCol: "constant"
+    valueTransformers:
+      -
+        type: "constant"
+        value: "Foo"
+  -
+    type: "addColumn"
+    toCol: "rnd"
+    valueTransformers:
+      -
+        type: "random"
+        size: 10
+        chars: "c"
+  -
+    type: "addColumn"
+    toCol: "test-value"
+    priority: 1000
+    groups:
+      - "virtual"
+    valueTransformers:
+      -
+        type: "constant"
+        value: "Test Value"
+  -
+    type: "transformColumn"
+    fromCol: "test-value"
+    toCol: "Virtual Test"
+    valueTransformers:
+      -
+        type: "regexp"
+        find: "^\\w+(.*)"
+        replace: "Replaced$1"
+  -
+    type: "transformColumn"
+    fromCol: "first"
+    toCol: "First Lower"
+    priority: 2500
+    valueTransformers:
+      -
+        type: "lower"
+  -
+    type: "transformColumn"
+    fromCol: "first_name"
+    toCol: "first"
+    valueTransformers:
+      -
+        type: "regexp"
+        find: "^(.{1}).*(.{2})$"
+        replace: "$1-$2"
+      -
+        type: "upper"
+  -
+    type: "transformColumn"
+    fromCol: "email"
+    toCol: "Top-Level, Domain"
+    valueTransformers:
+      -
+        type: "regexp"
+        find: "^.+@.+\\.(\\w+)$"
+        replace: "$1"
+      -
+        type: "upper"
+      -
+        type: "lookup"
+        header: false
+        keyCol: 0
+        valueCol: 1
+        csvDelimiter: ";"
+        file: "test-data/test-lookup.csv"
+      -
+        type: "lookup"
+        header: true
+        keyCol: "from"
+        valueCol: "to"
+        values:
+          -
+            - "from"
+            - "middle"
+            - "to"
+          -
+            - "aaa"
+            - "foo"
+            - "123"
+          -
+            - "ccc"
+            - "foo"
+            - "234"
+          -
+            - "bbb"
+            - "foo"
+            - "345"
+          -
+            - "ddd"
+            - "foo"
+            - "567"
+          -
+            - "eee"
+            - "foo"
+            - "789"
+          -
+            - "fff"
+            - "foo"
+            - "Test"
+          -
+            - "ggg"
+            - "foo"
+            - "!!!"
+          -
+            - "hhh"
+            - "foo"
+            - "[],;\"'"
+          -
+            - "foo"
+            - "foo"
+            - "T"
+  -
+    type: "addColumn"
+    toCol: "generated"
+    groups:
+      - "default"
+      - "additional"
+    valueTransformers:
+      -
+        type: "multipartString"
+        parts:
+          -
+            size: 5
+            pad: "_"
+            fromCol: "Top-Level, Domain"
+            valueTransformers:
+              -
+                type: "regexp"
+                find: "(.).*"
+                replace: "$1"
+          -
+            size: 10
+            pad: "+"
+            fromCol: "country"
+            valueTransformers:
+              -
+                type: "regexp"
+                find: "(.{4}).*"
+                replace: "$1"
+              -
+                type: "regexp"
+                find: "\\s*"
+                replace: ""
+              -
+                type: "upper"
+          -
+            size: 10
+            pad: "0"
+            valueTransformers:
+              -
+                type: "random"
+                size: 6
+                chars: "F"
+          -
+            size: 20
+            pad: "X"
+            valueTransformers:
+              -
+                type: "column"
+                col: "test-value"
+  -
+    type: "copyFromOriginal"
+    groups:
+      - "additional"
+    excludeCols:
+      - "last_name"
+  -
+    type: "removeColumns"
+    groups:
+      - "additional"
+    cols:
+      - "Some Date"

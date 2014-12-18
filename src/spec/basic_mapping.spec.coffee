@@ -2,6 +2,7 @@ Q = require 'q'
 fs = require 'q-io/fs'
 {_} = require('underscore')
 _s = require 'underscore.string'
+yaml = require 'js-yaml'
 
 util = require '../lib/util'
 mapping = require('../main').mapping
@@ -14,7 +15,7 @@ describe 'Mapping', ->
     util.loadFile mappingFile
     .then (mappingText) ->
       new mapping.Mapping
-        mappingConfig: JSON.parse(mappingText)
+        mappingConfig: yaml.safeLoad(mappingText)
         transformers: transformer.defaultTransformers
         columnMappers: mapping.defaultColumnMappers
       .init()
@@ -41,7 +42,7 @@ describe 'Mapping', ->
     .then (mapping) ->
       mapping.transformRow ["default"], inObj
 
-  it 'should map CSV file with standard mappings and produce 2 output CSV for "default" and "additional" groups', (done) ->
+  it 'should map CSV file with standard mappings and produce 2 output CSV for "default" and "additional" groups based on JSON mapping', (done) ->
     withTestDir (testDir)->
       createTestMapper testDir, 'test-data/test-mapping.json',
         inCsv: 'test-data/test-small.csv'
@@ -51,12 +52,35 @@ describe 'Mapping', ->
       .then (count) ->
         expect(count).toBe 101
 
-
         Q.all [
           util.loadFile('test-data/test-small.expected.csv'),
           util.loadFile("#{testDir}/test-small.actual.csv"),
           util.loadFile('test-data/test-small-additional.expected.csv'),
           util.loadFile("#{testDir}/test-small-additional.actual.csv")
+        ]
+        .spread (expectedMainOut, actualMainOut, expectedAdditionalOut, actualAdditionalOut) ->
+          expect(actualMainOut.toString()).toBe expectedMainOut.toString()
+          expect(actualAdditionalOut.toString()).toBe expectedAdditionalOut.toString()
+    .then ->
+      done()
+    .fail (error) ->
+      done(error)
+
+  it 'should map CSV file with standard mappings and produce 2 output CSV for "default" and "additional" groups based on YAML mapping', (done) ->
+    withTestDir (testDir)->
+      createTestMapper testDir, 'test-data/test-mapping.yaml',
+        inCsv: 'test-data/test-small.csv'
+        outCsv: "#{testDir}/test-small.actual-yaml.csv"
+        group: 'default'
+        additionalOutCsv: [{group: 'additional', file: "#{testDir}/test-small-additional.actual-yaml.csv"}]
+      .then (count) ->
+        expect(count).toBe 101
+
+        Q.all [
+          util.loadFile('test-data/test-small.expected.csv'),
+          util.loadFile("#{testDir}/test-small.actual-yaml.csv"),
+          util.loadFile('test-data/test-small-additional.expected.csv'),
+          util.loadFile("#{testDir}/test-small-additional.actual-yaml.csv")
         ]
         .spread (expectedMainOut, actualMainOut, expectedAdditionalOut, actualAdditionalOut) ->
           expect(actualMainOut.toString()).toBe expectedMainOut.toString()

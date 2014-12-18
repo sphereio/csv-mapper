@@ -1,5 +1,6 @@
 Q = require 'q'
 {_} = require 'underscore'
+yaml = require 'js-yaml'
 
 util = require '../lib/util'
 package_json = require '../package.json'
@@ -16,7 +17,7 @@ optimist = require('optimist')
 .describe('inCsvDelimiter', 'CSV delimiter in input file (by default csvDelimiter is used).')
 .describe('outCsvDelimiter', 'CSV delimiter in output files (by default csvDelimiter is used).')
 .describe('csvQuote', 'CSV quote (by default ").')
-.describe('mapping', 'Mapping JSON file or URL.')
+.describe('mapping', 'Mapping YAML/JSON file or URL.')
 .describe('group', "The column group that should be used.")
 .describe('additionalOutCsv', 'Addition output CSV files separated by comma `,` and optionally prefixed with `groupName:`.')
 .describe('timeout', 'Set timeout for requests')
@@ -49,7 +50,7 @@ required =
 
 Q.spread [util.loadFile(argv.mapping)], (mappingText) ->
   new mapping.Mapping
-    mappingConfig: JSON.parse(mappingText)
+    mappingConfig:  yaml.safeLoad(mappingText)
     transformers: transformer.defaultTransformers.concat([required])
     columnMappers: mapping.defaultColumnMappers
   .init()

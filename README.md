@@ -33,7 +33,7 @@ sudo npm install csv-mapper -g
 
 ### Usage
 
-    Usage: csv-mapper --mapping [mapping.json]
+    Usage: csv-mapper --mapping [mapping.yaml]
 
     Options:
       --help, -h            Shows usage info and exits.
@@ -55,7 +55,7 @@ The only required argument is `mapping` (see below).
 
 ### Mapping File
 
-Mapping is a json document that has following structure:
+Mapping is a YAML/JSON document that has following structure:
 
     {
       "description": "Test mapping",
