@@ -71,6 +71,10 @@ Q.spread [util.loadFile(argv.mapping)], (mappingText) ->
   console.error "\n\nProcessed #{count} lines in #{endTime - startTime} ms."
   process.exit 0
 .fail (error) ->
-  console.error error.stack
+  if error.name and error.name == 'YAMLException'
+    console.error error.toString()
+  else
+    console.error error.stack
+
   process.exit 1
 .done()
