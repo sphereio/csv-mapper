@@ -124,9 +124,10 @@ class Mapper
 
         rowPromise
         .then (convertedPerGroup) =>
-          _.each writers, (w) =>
-            result = @_convertFromObject(w.newHeaders, _.find(convertedPerGroup, (c) -> c.group is w.group).row)
-            w.writer.write result
+          if convertedPerGroup?
+            _.each writers, (w) =>
+              result = @_convertFromObject(w.newHeaders, _.find(convertedPerGroup, (c) -> c.group is w.group).row)
+              w.writer.write result
 
           rowFinishedDefer.resolve true
         .fail (error) ->

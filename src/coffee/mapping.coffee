@@ -161,7 +161,7 @@ class ColumnTransformer extends ColumnMapping
     if @_type is 'addColumn' then 3000 else 2000
 
 ###
-  Transforms one object into another object accoring to the mapping configuration
+  Transforms one object into another object according to the mapping configuration
 
   Options:
     mappingConfig
@@ -172,6 +172,7 @@ class Mapping
   constructor: (options) ->
     @_mappingConfig = options.mappingConfig
     @_transformers = options.transformers
+    @_conditions = options.conditions
     @_columnMappers = options.columnMappers
     @groupColumn = @_mappingConfig.groupColumn
 
@@ -179,6 +180,9 @@ class Mapping
     @_constructMapping(@_mappingConfig)
     .then (mapping) =>
       @_columnMapping = mapping
+      util.initConditions(@_conditions, @_mappingConfig.conditions or [])
+    .then (conditions) =>
+      @_initializedConditions = conditions
       this
 
   _constructMapping: (mappingJson) ->
@@ -196,9 +200,18 @@ class Mapping
     _.reduce @_columnMapping, ((acc, mapping) -> mapping.transformHeader(acc, columnNames)), _.map(groups, (g) -> {group: g, newHeaders: []})
 
   transformRow: (groups, row, additionalProperties = {}) ->
+    originalRow = _.clone(row)
     mappingsSorted = _.sortBy @_columnMapping, (mapping) -> mapping.priority()
     initialAcc = _.map(groups, (g) -> {group: g, row: {}}).concat {group: util.virtualGroup(), row: additionalProperties}
     _.reduce mappingsSorted, ((accRowPromise, mapping) -> accRowPromise.then((accRow) -> mapping.map(row, accRow))), Q(initialAcc)
+    .then (groupedResults) =>
+      Q.all _.map(@_initializedConditions, (c) -> c.check(originalRow, groupedResults))
+      .then (results) ->
+        if _.contains(results, false)
+          null
+        else
+          groupedResults
+
 
 module.exports =
   ColumnMapping: ColumnMapping

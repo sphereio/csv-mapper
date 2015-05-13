@@ -5,8 +5,7 @@ _s = require 'underscore.string'
 yaml = require 'js-yaml'
 
 util = require '../lib/util'
-mapping = require('../main').mapping
-transformer = require('../main').transformer
+{mapping, transformer, condition} = require '../main'
 
 Mapper = require('../main').Mapper
 
@@ -17,6 +16,7 @@ describe 'Mapping', ->
       new mapping.Mapping
         mappingConfig: yaml.safeLoad(mappingText)
         transformers: transformer.defaultTransformers
+        conditions: condition.defaultConditions
         columnMappers: mapping.defaultColumnMappers
       .init()
     .then (mapping) ->

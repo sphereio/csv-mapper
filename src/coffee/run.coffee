@@ -31,8 +31,7 @@ optimist = require('optimist')
 .demand(['mapping'])
 
 Mapper = require('../main').Mapper
-transformer = require('../main').transformer
-mapping = require('../main').mapping
+{mapping, transformer, condition} = require '../main'
 
 argv = optimist.argv
 startTime = new Date().getTime()
@@ -52,6 +51,7 @@ Q.spread [util.loadFile(argv.mapping)], (mappingText) ->
   new mapping.Mapping
     mappingConfig:  yaml.safeLoad(mappingText)
     transformers: transformer.defaultTransformers.concat([required])
+    conditions: condition.defaultConditions
     columnMappers: mapping.defaultColumnMappers
   .init()
 .then (mapping) ->

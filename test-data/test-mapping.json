@@ -1,5 +1,8 @@
 {
   "description": "Test mapping",
+  "conditions": [
+    {"in": {"rnd": ["bar", "baz"]}}
+  ],
   "columnMapping": [{
       "type": "addColumn",
       "toCol": "constant",

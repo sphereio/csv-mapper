@@ -84,6 +84,20 @@ module.exports =
     else
       Q([])
 
+  initConditions: (conditions, conditionConfig) ->
+    if conditionConfig
+      promises = _.map conditionConfig, (config) ->
+        found  = _.find conditions, (t) -> t.supports(config)
+
+        if found
+          found.create conditions, config
+        else
+          throw new Error("unsupported condition: #{JSON.stringify config}")
+
+      Q.all promises
+    else
+      Q([])
+
   parseAdditionalOutCsv: (config) ->
     if not config
       []
