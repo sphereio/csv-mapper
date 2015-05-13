@@ -21,6 +21,8 @@ module.exports =
     fs.exists(filePath).then (exists) ->
       if exists
         [stdFs.createReadStream(filePath), false]
+      else if filePath and filePath != ''
+        throw new Error("Input CSV file '#{filePath}' does not exist!")
       else
         [process.stdin, true]
 
