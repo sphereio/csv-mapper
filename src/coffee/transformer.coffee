@@ -244,6 +244,7 @@ class LookupTransformer extends ValueTransformer
         @_values = @_headers = values = null
         this
     else
+      # TODO reject promis if columnidx returns an error
       @_setColumnIdx()
       @_buildLookupMap()
       Q(this)
@@ -253,7 +254,7 @@ class LookupTransformer extends ValueTransformer
     @_valueIdx = if _.isString @_valueCol then @_headers.indexOf(@_valueCol) else @_valueCol
 
     if @_keyIdx < 0 or @_valueIdx < 0
-      throw new Error("Something is wrong in lookup config: key '#{@_keyCol}' or value '#{@_valueCol}' column not found by name!.")
+      new Error("Something is wrong in lookup config: key '#{@_keyCol}' or value '#{@_valueCol}' column not found by name!.")
 
   _buildLookupMap: ->
     # create a property map with first occurrence of key (first to stay compatible with the previous _.find based implementation)
@@ -288,7 +289,7 @@ class LookupTransformer extends ValueTransformer
         Q(@_lookupMap[safe])
       else
         fileMessage = if @_file then " File: #{@_file}." else ""
-        throw new Error("Lookup transformation failed for value '#{safe}'.#{fileMessage} on lookup data:"
+        new Error("Lookup transformation failed for value '#{safe}'.#{fileMessage} on lookup data:"
           + JSON.stringify(@_lookupMap, null, 4) + "most likely a missing lookup key")
 
 class MultipartStringTransformer extends ValueTransformer
