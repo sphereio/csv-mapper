@@ -134,7 +134,7 @@ class RequiredTransformer extends ValueTransformer
     if @_disabled or util.nonEmpty(value)
       Q(value)
     else
-      Q.reject new Error("Value is empty.")
+      Q.reject new Error("Required Value is empty.")
 
 class UpperCaseTransformer extends ValueTransformer
   @create: (transformers, options) ->
