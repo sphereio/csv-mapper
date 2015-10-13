@@ -238,28 +238,30 @@ class LookupTransformer extends ValueTransformer
         @_headers = values.headers
         @_values = values.data
 
-        @_keyIdx = if _.isString @_keyCol then @_headers.indexOf(@_keyCol) else @_keyCol
-        @_valueIdx = if _.isString @_valueCol then @_headers.indexOf(@_valueCol) else @_valueCol
-
-        if @_keyIdx < 0 or @_valueIdx < 0
-          throw new Error("Something is wrong in lookup config: key '#{@_keyCol}' or value '#{@_valueCol}' column not found by name!.")
-
-        @_condenseLookup()
+        @_setColumnIdx()
+        @_buildLookupMap()
+        # discard raw file content to save the memory (for large files):
+        @_values = @_headers = values = null
         this
     else
-      @_condenseLookup()
+      @_setColumnIdx()
+      @_buildLookupMap()
       Q(this)
 
-  _condenseLookup: ->
-    # create a "map" with first occurrence of key (first to stay compatible with the previous _.find based implementation
+  _setColumnIdx: ->
+    @_keyIdx = if _.isString @_keyCol then @_headers.indexOf(@_keyCol) else @_keyCol
+    @_valueIdx = if _.isString @_valueCol then @_headers.indexOf(@_valueCol) else @_valueCol
+
+    if @_keyIdx < 0 or @_valueIdx < 0
+      throw new Error("Something is wrong in lookup config: key '#{@_keyCol}' or value '#{@_valueCol}' column not found by name!.")
+
+  _buildLookupMap: ->
+    # create a property map with first occurrence of key (first to stay compatible with the previous _.find based implementation)
     @_lookupMap = {}
     @_values.forEach(
       (row) ->  @_lookupMap[row[@_keyIdx]] = row[@_valueIdx] unless @_lookupMap[row[@_keyIdx]]?
       this
     )
-    # discard raw data to save memory
-    @_headers = null
-    @_values = null
 
   _parseCsv: (csvText) ->
     d = Q.defer()
