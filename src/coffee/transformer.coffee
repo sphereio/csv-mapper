@@ -134,7 +134,7 @@ class RequiredTransformer extends ValueTransformer
     if @_disabled or util.nonEmpty(value)
       Q(value)
     else
-      Q.reject new Error("Required Value is empty.")
+      Q.reject new Error("Required value is empty.")
 
 class UpperCaseTransformer extends ValueTransformer
   @create: (transformers, options) ->
@@ -244,17 +244,17 @@ class LookupTransformer extends ValueTransformer
         @_values = @_headers = values = null
         this
     else
-      # TODO reject promis if columnidx returns an error
-      @_setColumnIdx()
-      @_buildLookupMap()
-      Q(this)
+      Q().then =>
+        @_setColumnIdx()
+        @_buildLookupMap()
+        this
 
   _setColumnIdx: ->
     @_keyIdx = if _.isString @_keyCol then @_headers.indexOf(@_keyCol) else @_keyCol
     @_valueIdx = if _.isString @_valueCol then @_headers.indexOf(@_valueCol) else @_valueCol
 
     if @_keyIdx < 0 or @_valueIdx < 0
-      new Error("Something is wrong in lookup config: key '#{@_keyCol}' or value '#{@_valueCol}' column not found by name!.")
+      throw new Error("Something is wrong in lookup config: key '#{@_keyCol}' or value '#{@_valueCol}' column not found by name!.")
 
   _buildLookupMap: ->
     # create a property map with first occurrence of key (first to stay compatible with the previous _.find based implementation)
