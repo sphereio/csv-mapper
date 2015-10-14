@@ -66,7 +66,7 @@ describe 'Transformers', ->
       .then (result) ->
         done("No error")
       .fail (error) ->
-        expect(error.message).toEqual 'Value is empty.'
+        expect(error.message).toEqual 'Required value is empty.'
         done()
       .done()
 
@@ -77,7 +77,7 @@ describe 'Transformers', ->
       .then (result) ->
         done("No error")
       .fail (error) ->
-        expect(error.message).toEqual 'Value is empty.'
+        expect(error.message).toEqual 'Required value is empty.'
         done()
       .done()
 
