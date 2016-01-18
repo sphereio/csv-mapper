@@ -134,7 +134,7 @@ class RequiredTransformer extends ValueTransformer
     if @_disabled or util.nonEmpty(value)
       Q(value)
     else
-      Q.reject new Error("Value is empty.")
+      Q.reject new Error("Required value is empty.")
 
 class UpperCaseTransformer extends ValueTransformer
   @create: (transformers, options) ->
@@ -237,9 +237,32 @@ class LookupTransformer extends ValueTransformer
       .then (values) =>
         @_headers = values.headers
         @_values = values.data
+
+        @_setColumnIdx()
+        @_buildLookupMap()
+        # discard raw file content to save the memory (for large files):
+        @_values = @_headers = values = null
         this
     else
-      Q(this)
+      Q().then =>
+        @_setColumnIdx()
+        @_buildLookupMap()
+        this
+
+  _setColumnIdx: ->
+    @_keyIdx = if _.isString @_keyCol then @_headers.indexOf(@_keyCol) else @_keyCol
+    @_valueIdx = if _.isString @_valueCol then @_headers.indexOf(@_valueCol) else @_valueCol
+
+    if @_keyIdx < 0 or @_valueIdx < 0
+      throw new Error("Something is wrong in lookup config: key '#{@_keyCol}' or value '#{@_valueCol}' column not found by name!.")
+
+  _buildLookupMap: ->
+    # create a property map with first occurrence of key (first to stay compatible with the previous _.find based implementation)
+    @_lookupMap = {}
+    @_values.forEach(
+      (row) ->  @_lookupMap[row[@_keyIdx]] = row[@_valueIdx] unless @_lookupMap[row[@_keyIdx]]?
+      this
+    )
 
   _parseCsv: (csvText) ->
     d = Q.defer()
@@ -261,20 +284,13 @@ class LookupTransformer extends ValueTransformer
 
   transform: (value, row) ->
     util.withSafeValue value, (safe) =>
-      keyIdx = if _.isString @_keyCol then @_headers.indexOf(@_keyCol) else @_keyCol
-      valueIdx = if _.isString @_valueCol then @_headers.indexOf(@_valueCol) else @_valueCol
 
-      if keyIdx < 0 or valueIdx < 0
-        throw new Error("Something is wrong in lookup config: key '#{@_keyCol}' or value '#{@_valueCol}' column not found by name!.")
-
-      found = _.find @_values, (row) -> row[keyIdx] is safe
-
-      if found
-        Q(found[valueIdx])
+      if @_lookupMap[safe]?
+        Q(@_lookupMap[safe])
       else
         fileMessage = if @_file then " File: #{@_file}." else ""
-        valuesMessage = @_values.join "; "
-        new Error("Lookup transformation failed for value '#{safe}'.#{fileMessage} Values: #{valuesMessage}")
+        new Error("Lookup transformation failed for value '#{safe}'.#{fileMessage} on lookup data:"
+          + JSON.stringify(@_lookupMap, null, 4) + "most likely a missing lookup key")
 
 class MultipartStringTransformer extends ValueTransformer
   @create: (transformers, options) ->
