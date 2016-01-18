@@ -144,6 +144,7 @@ Here is the list of standard value transformers:
   * **csvDelimiter** - String (Optional)
   * **csvQuote** - String (Optional)
   * **values** - Array of Arrays or Strings (Optional) - an alternative to file, that allows to define lookup CSV contents in-place
+  * **missingValue** - String (Optional) - value that should be used if lookup fails
 * **multipartString** - retuns a string that consists of multiple parts
   * **parts** - Array of objects - The definitions of the string parts
     * **size** - Int - the size of the string part (if no padding is specified and resulting string has different size, then mapping would be interrupted with error)

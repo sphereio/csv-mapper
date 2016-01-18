@@ -224,6 +224,7 @@ class LookupTransformer extends ValueTransformer
     @_file = options.file
     @_csvDelimiter = options.csvDelimiter or ','
     @_csvQuote = options.csvQuote or '"'
+    @_missingValue = options.missingValue
 
     if options.values
       @_headers = options.values.shift()
@@ -287,6 +288,8 @@ class LookupTransformer extends ValueTransformer
 
       if @_lookupMap[safe]?
         Q(@_lookupMap[safe])
+      else if @_missingValue?
+        Q(@_missingValue)
       else
         fileMessage = if @_file then " File: #{@_file}." else ""
         new Error("Lookup transformation failed for value '#{safe}'.#{fileMessage} on lookup data:"
