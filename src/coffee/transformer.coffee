@@ -200,7 +200,8 @@ class RegexpTransformer extends ValueTransformer
     options.type is 'regexp'
 
   constructor: (transformers, options) ->
-    @_find = new RegExp(options.find, 'g')
+    @_flags = options.flags || 'g'
+    @_find = new RegExp(options.find, @_flags)
     @_replace = options.replace
 
   transform: (value, row) ->

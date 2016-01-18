@@ -136,6 +136,7 @@ Here is the list of standard value transformers:
 * **regexp** - searches input string with the help of regular expression and replaces found matches
   * **find** - String - regular expression to find
   * **replace** - String - replacement text (you can use placeholders like `$1` to insert groups)
+  * **flags** - String (Optional) - regexp flags (by default 'g')
 * **lookup** - a lookup table that will  return matching value based on the input key
   * **header**  - Boolean - whether lookup CSV contains header
   * **keyCol** - Int or String - lookup CSV key column name or index
