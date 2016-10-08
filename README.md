@@ -182,7 +182,7 @@ If you are in the project root, you can map an example CSV file like this:
     csv-mapper --mapping test-data/test-mapping.json --inCsv test-data/test-large.csv
 
 ## Tests
-Tests are written using [jasmine](http://pivotal.github.io/jasmine/) (behavior-driven development framework for testing javascript code). Thanks to [jasmine-node](https://github.com/mhevery/jasmine-node), this test framework is also available for node.js.
+Tests are written using [jasmine](https://jasmine.github.io/) (behavior-driven development framework for testing javascript code). Thanks to [jasmine-node](https://github.com/mhevery/jasmine-node), this test framework is also available for node.js.
 
 To run tests, simple execute the *test* task using `grunt`.
 ```bash
